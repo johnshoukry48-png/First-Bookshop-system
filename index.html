@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="soft">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نظام محاسبة المكتبة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e8edee;--card:#f6f8f7;--tx:#26333b;--mu:#64737c;--bd:#d2dcdf;--ac:#3f7f9e;--ac2:#2f6682;--ok:#3d8b5f;--er:#c0504d;--wa:#b9802f;--side:#27373f;--sidetx:#d3dee2;--inp:#fbfcfb;--hd:#e2eaec;--sh:0 4px 18px rgba(30,50,60,.07)}
+[data-theme=light]{--bg:#f3f5fa;--card:#fff;--tx:#162033;--mu:#6b7690;--bd:#e3e8f2;--ac:#2f5bea;--ac2:#1d3fb8;--ok:#16a34a;--er:#dc2626;--wa:#d97706;--side:#0f1b3d;--sidetx:#cdd6f0;--inp:#fff;--hd:#f0f3fa;--sh:0 6px 24px rgba(20,35,80,.08)}
+[data-theme=sepia]{--bg:#efe6d3;--card:#f9f3e5;--tx:#3a3226;--mu:#7b6d59;--bd:#dfd1b3;--ac:#9a6a2e;--ac2:#7d5321;--ok:#5f8a4b;--er:#b4503f;--wa:#b07a28;--side:#3b3023;--sidetx:#e6dac3;--inp:#fffaf0;--hd:#eee2c6;--sh:0 4px 18px rgba(70,50,20,.08)}
+[data-theme=dark]{--bg:#1a2026;--card:#232b32;--tx:#d9dfe4;--mu:#97a4ae;--bd:#37424b;--ac:#6fa9c9;--ac2:#4f8fb2;--ok:#5fb383;--er:#e07a74;--wa:#d8a24e;--side:#141a1f;--sidetx:#c4d0d6;--inp:#1c2329;--hd:#2b343c;--sh:0 4px 18px rgba(0,0,0,.35)}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font-family:'Tajawal','Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.6}
+button,input,select,textarea{font-family:inherit;font-size:inherit}
+.num,td.n,th.n,input.num{direction:ltr;unicode-bidi:plaintext;font-variant-numeric:tabular-nums}
+td.n,th.n{text-align:left}
+#app{height:100%}
+/* ===== شاشات الدخول والإعداد ===== */
+.center{min-height:100%;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,var(--side),var(--ac))}
+.box{background:var(--card);border-radius:20px;padding:32px;width:100%;max-width:410px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.box h1{margin:0 0 4px;font-size:22px}.box p{color:var(--mu);margin:0 0 18px}
+.logo{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--ac),#6aa0ff);display:grid;place-items:center;color:#fff;font-size:28px;margin-bottom:12px}
+/* ===== التخطيط ===== */
+.shell{display:flex;height:100%}
+.side{width:248px;background:var(--side);color:var(--sidetx);display:flex;flex-direction:column;flex-shrink:0;transition:transform .25s;z-index:40}
+.side .brand{padding:18px 18px 12px;display:flex;gap:10px;align-items:center;color:#fff;font-weight:800}
+.side .brand b{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--ac),#6aa0ff);display:grid;place-items:center;font-size:20px}
+.side nav{flex:1;overflow:auto;padding:6px 10px}
+.side a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:11px;color:var(--sidetx);text-decoration:none;margin-bottom:2px;font-weight:500}
+.side a:hover{background:rgba(255,255,255,.08)}.side a.on{background:var(--ac);color:#fff}
+.side .grp{font-size:12px;opacity:.55;margin:12px 12px 4px}
+.side .me{padding:12px 14px;border-top:1px solid rgba(255,255,255,.1);font-size:13px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--bd)}
+.top h2{margin:0;font-size:19px;flex:1}
+.page{flex:1;overflow:auto;padding:18px 20px 40px}
+.btn.burger{display:none}
+.side .brand img{width:38px;height:38px;border-radius:10px;object-fit:contain;background:#fff;padding:2px}
+body.ro .wr,body.ro [data-sv],body.ro [data-dl],body.ro #mA{display:none!important}body.ro #msbox input,body.ro #msbox select{pointer-events:none;opacity:.85}
+.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:700;background:var(--hd)}
+.pm-بنك{color:var(--ac)}.pm-بريد{color:var(--wa)}
+.scrim{display:none}
+@media(max-width:900px){.side{position:fixed;inset:0 0 0 auto;transform:translateX(100%)}.side.open{transform:none}.btn.burger{display:inline-flex}.scrim.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30}.page{padding:12px 12px 40px}}
+/* ===== عناصر ===== */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;box-shadow:var(--sh);margin-bottom:16px}
+.card h3{margin:0 0 12px;font-size:16px}
+.grid{display:grid;gap:12px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g6{grid-template-columns:repeat(3,1fr)}@media(min-width:1500px){.g6{grid-template-columns:repeat(6,1fr)}}
+@media(max-width:1100px){.g4,.g6{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.g2,.g3,.g4,.g6{grid-template-columns:1fr}}
+.kpi{padding:14px 16px;border-radius:14px;background:var(--card);border:1px solid var(--bd);box-shadow:var(--sh)}
+.kpi small{color:var(--mu);display:block}.kpi b{font-size:22px;display:block;margin-top:2px}.kpi.ac{border-top:3px solid var(--ac)}.kpi.ok{border-top:3px solid var(--ok)}.kpi.er{border-top:3px solid var(--er)}.kpi.wa{border-top:3px solid var(--wa)}
+label.l{display:block;font-size:13px;font-weight:700;margin:0 0 4px;color:var(--mu)}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--bd);border-radius:10px;background:var(--inp);color:var(--tx);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(47,91,234,.18)}
+input[type=checkbox]{width:auto}
+.btn{border:0;background:var(--ac);color:#fff;padding:9px 16px;border-radius:10px;cursor:pointer;font-weight:700;display:inline-flex;gap:6px;align-items:center;justify-content:center;white-space:nowrap}
+.btn:hover{background:var(--ac2)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.gh{background:transparent;color:var(--tx);border:1px solid var(--bd)}.btn.gh:hover{background:var(--hd)}
+.btn.er{background:var(--er)}.btn.ok{background:var(--ok)}.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>*{flex:1;min-width:140px}.row>.fit{flex:0 0 auto;min-width:0}
+.tw{overflow:auto;border:1px solid var(--bd);border-radius:12px;max-height:68vh}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--hd);position:sticky;top:0;z-index:2;text-align:right;padding:9px 10px;white-space:nowrap;font-weight:700;border-bottom:1px solid var(--bd)}
+td{padding:7px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+tbody tr:hover{background:var(--hd)}
+tfoot td{background:var(--hd);font-weight:800;position:sticky;bottom:0}
+.pos{color:var(--ok)}.neg{color:var(--er)}.mut{color:var(--mu)}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;font-weight:700;background:var(--hd)}.tag.er{background:rgba(220,38,38,.12);color:var(--er)}.tag.ok{background:rgba(22,163,74,.12);color:var(--ok)}.tag.wa{background:rgba(217,119,6,.14);color:var(--wa)}
+.toast{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:8px;z-index:99}
+.toast div{background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;box-shadow:var(--sh);animation:up .25s}.toast .e{background:var(--er);color:#fff}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;z-index:70;padding:14px}
+.modal .m{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:620px;max-height:92vh;overflow:auto}
+.bar{display:flex;align-items:flex-end;gap:10px;height:150px;padding:8px 4px 0}.bar .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%;font-size:11px;color:var(--mu)}
+.bar .p{display:flex;gap:3px;align-items:flex-end;height:100%;width:100%;justify-content:center}.bar .p i{display:block;width:40%;border-radius:5px 5px 0 0;min-height:2px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mu);margin-top:6px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:4px}
+.note{background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.35);border-radius:12px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 14px;border-radius:99px;cursor:pointer;font-weight:700}.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.eq{display:grid;grid-template-columns:1fr auto;gap:6px 14px}.eq .t{font-weight:800;border-top:2px solid var(--bd);padding-top:6px}
+.sp{height:10px}
+table th,table td{text-align:center!important}td input,td select{text-align:center}
+.newh{display:block;font-size:12px;color:var(--wa);margin-top:2px;font-weight:700}
+.due{padding:9px 11px;border:1px dashed var(--ac);border-radius:10px;font-weight:800;color:var(--ac);background:var(--hd);text-align:center}
+.chk2{display:flex;gap:6px;align-items:center;margin-top:26px;font-weight:700}
+@media print{.side,.top,.noprint,.toast{display:none!important}.page{overflow:visible;padding:0}.tw{max-height:none;overflow:visible;border:0}body{background:#fff;color:#000}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   إعدادات الاتصال بـ Supabase — ضع القيمتين هنا (أو أدخلهما من شاشة الإعداد الأولى)
+   Project Settings ▸ API ▸ Project URL  و  anon public key
+   ===================================================================== */
+const PRODUCTION = true;   // نسخة الإنتاج: true (تُخفي الوضع التجريبي)
+const CFG = window.APP_CONFIG || {};
+const SUPABASE_URL = CFG.url || '';
+const SUPABASE_ANON_KEY = CFG.key || '';
+
+/* ============================ أدوات ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isFinite(x) ? x : 0; };
+const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+const fmt = x => (x == null || isNaN(x)) ? '—' : Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pct = x => (x == null || !isFinite(x)) ? '—' : (x * 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const cls = x => x > 0.005 ? 'pos' : x < -0.005 ? 'neg' : '';
+const today = () => new Date().toISOString().slice(0, 10);
+const norm = s => String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim().toLowerCase();
+const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+const monthLabel = k => { if (!k) return ''; if (k === 'opening') return 'افتتاحي'; const [y, m] = k.split('-'); return `${MONTHS_AR[+m - 1] || m} ${y}`; };
+function toast(msg, err) { const d = document.createElement('div'); if (err) d.className = 'e'; d.textContent = msg; $('#toast').appendChild(d); setTimeout(() => d.remove(), err ? 6000 : 3000); }
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function dl(name, text, type = 'text/csv;charset=utf-8') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+const THEMES = ['soft', 'sepia', 'dark', 'light'], TN = { soft: 'هادئ', sepia: 'ورقي دافئ', dark: 'داكن', light: 'فاتح' };
+const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('theme', t); };
+const PMS = ['نقدى', 'بنك', 'بريد'];
+const mv = v => { if (v == null || v === '' || isNaN(Number(v))) return ''; const n = Number(v); const [a, b] = String(Math.abs(n)).split('.'); return (n < 0 ? '-' : '') + a.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (b ? '.' + b.slice(0, 2) : ''); };
+/* حقول المبالغ: فواصل الآلاف أثناء الكتابة */
+document.addEventListener('input', e => {
+  const t = e.target; if (!t || !t.classList) return;
+  if (t.classList.contains('money')) {
+    const pos = t.selectionStart, raw = t.value.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)), keep = raw.slice(0, pos).replace(/[^\d.]/g, '').length;
+    let v = raw.replace(/[^\d.\-]/g, ''); const neg = v.startsWith('-'); v = v.replace(/-/g, ''); const p = v.split('.'); let ip = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','), out = (neg ? '-' : '') + ip + (p.length > 1 ? '.' + p.slice(1).join('').slice(0, 2) : '');
+    if (out !== t.value) { t.value = out; let c = 0, i = 0; for (; i < out.length && c < keep; i++) if (/[\d.]/.test(out[i])) c++; try { t.setSelectionRange(i, i); } catch (x) {} }
+  }
+  if (t.dataset && t.dataset.ref) {   // تنبيه: اسم جديد سيُضاف تلقائياً
+    let h = t.parentElement.querySelector('.newh'); if (!h) { h = document.createElement('small'); h.className = 'newh'; t.insertAdjacentElement('afterend', h); }
+    const name = t.value.trim(), list = (S.data[t.dataset.ref] || []);
+    h.textContent = name && !list.some(x => norm(x.name) === norm(name)) ? '➕ ' + (t.dataset.ref === 'customers' ? 'عميل' : 'ناشر') + ' جديد — سيُضاف تلقائياً عند الحفظ' : '';
+  }
+});
+const invKey = r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(x)) return [2, 0, x]; const m = x.match(/^\d+/); return m ? [0, +m[0], x] : [1, 0, x]; };
+const invCmp = (a, b) => { const x = invKey(a), y = invKey(b); return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], 'en', { numeric: true }) || a.id - b.id; };
+async function nextInv() {
+  try { const { data, error } = await sb.rpc('next_invoice_no'); if (!error && data != null) return String(data); } catch (e) {}
+  return String(Math.max(0, ...(S.data.sales || []).map(r => /^\d{1,9}$/.test(r.invoice_no || '') ? +r.invoice_no : 0)) + 1);
+}
+const pmSel = (id, v, empty) => `<select id="${id}">${empty ? '<option value="">—</option>' : ''}${PMS.map(x => `<option ${(empty ? v : (v || 'نقدى')) === x ? 'selected' : ''}>${x}</option>`).join('')}</select>`;
+const csvCell = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+const toCsv = (head, rows) => [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+function parseCsv(text) {
+  text = text.replace(/^﻿/, ''); const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  const head = rows.shift() || []; return rows.filter(r => r.length > 1 || r[0] !== '').map(r => Object.fromEntries(head.map((h, i) => [h.trim(), r[i] == null ? '' : r[i]])));
+}
+
+/* ============================ الحالة ============================ */
+let sb = null, me = null;      // me = { id, email, role, full_name, active }
+const S = { data: {}, loading: {} };
+const TABLES = { customers: 'name', publishers: 'name', sales: 'id', purchases: 'id', expenses: 'id', customer_returns: 'id', publisher_returns: 'id', treasury_months: 'month', pending_items: 'id', adjustments: 'id', app_settings: 'key' };
+async function fetchAll(table) {
+  let out = [], from = 0;
+  for (;;) {
+    const { data, error } = await sb.from(table).select('*').order(TABLES[table] === 'name' ? 'id' : TABLES[table], { ascending: true }).range(from, from + 999);
+    if (error) throw error; out = out.concat(data); if (data.length < 1000) break; from += 1000;
+  }
+  return out;
+}
+async function load(...keys) {
+  await Promise.all(keys.map(async k => {
+    if (S.data[k]) return;
+    if (!S.loading[k]) S.loading[k] = fetchAll(k).then(d => { S.data[k] = d; S.loading[k] = null; }).catch(e => { S.loading[k] = null; throw e; });
+    await S.loading[k];
+  }));
+}
+const invalidate = (...k) => k.forEach(x => { S.data[x] = null; });
+const settings = () => Object.fromEntries((S.data.app_settings || []).map(r => [r.key, r.value]));
+const byId = (arr) => new Map(arr.map(x => [x.id, x]));
+const isAdmin = () => me && me.role === 'admin';
+const isViewer = () => me && me.role === 'viewer';
+const canWrite = () => me && (me.role === 'admin' || me.role === 'staff');
+const canSeeAll = () => me && (me.role === 'admin' || me.role === 'viewer');
+const roleLabel = r => r === 'admin' ? 'مدير / مالك' : r === 'viewer' ? 'قراءة فقط' : 'موظف إدخال';
+const imgToDataUrl = (file, max = 320) => new Promise((res, rej) => { const fr = new FileReader(); fr.onerror = rej; fr.onload = () => { const im = new Image(); im.onerror = rej; im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * k)); c.height = Math.max(1, Math.round(im.height * k)); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/png')); }; im.src = fr.result; }; fr.readAsDataURL(file); });
+
+/* ============================ حسابات (نفس منطق Excel) ============================ */
+const sum = (arr, f) => arr.reduce((a, x) => a + num(f(x)), 0);
+const termOk = (t, term) => !term || term === 'الكل' || t === term;
+
+/** ورقة "ارصدة العملاء": جدول محوري على Sales + أعمدة المرتجع */
+const inR = (d, rg) => !rg || ((!rg.from || d >= rg.from) && (!rg.to || d <= rg.to));
+/** تسويات الحساب (عمولة/إضافات): تؤثر على الأرصدة وكشوف الحساب فقط ولا تدخل الخزنة أبداً */
+function adjAgg(kind, term, rg) {
+  const m = new Map(), key = kind === 'c' ? 'customer_id' : 'publisher_id';
+  (S.data.adjustments || []).forEach(r => { if (r.kind !== kind || !termOk(r.term, term) || !inR(r.adj_date, rg)) return; const a = m.get(r[key]) || { d: 0, p: 0 }; if (r.direction === 'drawn') a.d += num(r.amount); else a.p += num(r.amount); m.set(r[key], a); });
+  return m;
+}
+function retAgg(list, key, term, rg) {
+  const m = new Map();
+  list.forEach(r => { if (!inR(r.return_date, rg)) return; const a = m.get(r[key]) || { t1: 0, t2: 0, all: 0 }; if (r.term === 'الاول') a.t1 += num(r.amount); else a.t2 += num(r.amount); if (termOk(r.term, term)) a.all += num(r.amount); m.set(r[key], a); });
+  return m;
+}
+const BKEYS = ['w', 'p', 'adj', 'net', 'ret', 'netR', 'r1', 'net1', 'r2', 'net2'];
+function customerBalances(term, showHidden, rg) {
+  const agg = new Map();
+  S.data.sales.forEach(r => { if (!termOk(r.term, term) || !inR(r.sale_date, rg)) return; const a = agg.get(r.customer_id) || { w: 0, p: 0, c: 0 }; a.w += num(r.credit); a.p += num(r.payments); a.c += num(r.commission); agg.set(r.customer_id, a); });
+  const ret = retAgg(S.data.customer_returns, 'customer_id', term, rg), adj = adjAgg('c', term, rg);
+  const st = settings(), ratio = num(st.credit_alert_ratio || 0.9), basis = st.credit_alert_basis || 'payments';
+  const rows = [];
+  S.data.customers.forEach(c => {
+    if (!showHidden && !c.show_in_balances) return;
+    const a = agg.get(c.id), rr = ret.get(c.id) || { t1: 0, t2: 0, all: 0 }, ad = adj.get(c.id) || { d: 0, p: 0 };
+    if (!a && !rr.t1 && !rr.t2 && !ad.d && !ad.p) return;
+    const w = (a ? a.w : 0) + ad.d, p = (a ? a.p : 0) + ad.p, com = a ? a.c : 0, net = w - p;
+    const lim = c.credit_limit == null ? null : num(c.credit_limit);
+    const test = basis === 'balance' ? net : p;
+    rows.push({ id: c.id, name: c.name, type: c.type, w, p, adj: ad.d - ad.p, net, com, ret: rr.all, netR: net - rr.all, pct: w ? p / w : null, limit: lim,
+      alert: lim != null && test >= lim * ratio ? 'اقترب من التجاوز' : '',
+      r1: rr.t1, net1: net - rr.t1, rr1: w ? rr.t1 / w : null,
+      r2: rr.t2, net2: net - rr.t2, pct2: (w - rr.t2) ? p / (w - rr.t2) : null, hidden: !c.show_in_balances });
+  });
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  const t = rows.reduce((o, r) => { [...BKEYS, 'com'].forEach(k => o[k] += r[k]); return o; }, { w: 0, p: 0, adj: 0, net: 0, com: 0, ret: 0, netR: 0, r1: 0, net1: 0, r2: 0, net2: 0 });
+  t.pct = t.w ? t.p / t.w : null; t.rr1 = t.w ? t.r1 / t.w : null; t.pct2 = (t.w - t.r2) ? t.p / (t.w - t.r2) : null;
+  return { rows, total: t };
+}
+/** ورقة "ارصدة الناشرين": المسحوبات = مشتريات اجل (المشتريات النقدية لا تدخل الرصيد) */
+function publisherBalances(term, showHidden, rg) {
+  const agg = new Map();
+  S.data.purchases.forEach(r => { if (!termOk(r.term, term) || !inR(r.purchase_date, rg)) return; const a = agg.get(r.publisher_id) || { w: 0, p: 0 }; a.w += num(r.credit_purchases); a.p += num(r.payments); agg.set(r.publisher_id, a); });
+  const ret = retAgg(S.data.publisher_returns, 'publisher_id', term, rg), adj = adjAgg('p', term, rg);
+  const rows = [];
+  S.data.publishers.forEach(c => {
+    if (!showHidden && !c.show_in_balances) return;
+    const a = agg.get(c.id), rr = ret.get(c.id) || { t1: 0, t2: 0, all: 0 }, ad = adj.get(c.id) || { d: 0, p: 0 };
+    if (!a && !rr.t1 && !rr.t2 && !ad.d && !ad.p) return;
+    const w = (a ? a.w : 0) + ad.d, p = (a ? a.p : 0) + ad.p, net = w - p;
+    rows.push({ id: c.id, name: c.name, w, p, adj: ad.d - ad.p, net, ret: rr.all, netR: net - rr.all, pct: w ? p / w : null, r1: rr.t1, net1: net - rr.t1, pct1: (w - rr.t1) ? p / (w - rr.t1) : null, r2: rr.t2, net2: net - rr.t2, pct2: (w - rr.t2) ? p / (w - rr.t2) : null, hidden: !c.show_in_balances });
+  });
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  const t = rows.reduce((o, r) => { BKEYS.forEach(k => o[k] += r[k]); return o; }, { w: 0, p: 0, adj: 0, net: 0, ret: 0, netR: 0, r1: 0, net1: 0, r2: 0, net2: 0 });
+  t.pct = t.w ? t.p / t.w : null; t.pct1 = (t.w - t.r1) ? t.p / (t.w - t.r1) : null; t.pct2 = (t.w - t.r2) ? t.p / (t.w - t.r2) : null;
+  return { rows, total: t };
+}
+/** بند معلق نشط في الشهر k: أُدخل فيه أو رُحِّل إليه ولم يُسدَّد قبله */
+const pendActive = (p, k) => p.month <= k && (p.month === k || p.carry !== false) && !(p.settled && (p.settled_month || p.month) <= k);
+const varLabel = v => v < -0.005 ? 'عجز' : v > 0.005 ? 'زيادة' : 'متوازن';
+/** ورقة "الخزنة": إغلاق كل شهر وترحيله للشهر التالي */
+function treasuryChain() {
+  const months = [...S.data.treasury_months].sort((a, b) => a.month.localeCompare(b.month));
+  const sal = S.data.sales, pur = S.data.purchases, exp = S.data.expenses, pend = S.data.pending_items;
+  const out = []; let prev = null;
+  months.forEach(m => {
+    const k = m.month, sm = sal.filter(r => r.period === k), pm = pur.filter(r => r.period === k), em = exp.filter(r => r.period === k);
+    const opening = m.opening_override != null ? num(m.opening_override) : (prev ? prev.closing : 0);
+    const salesV = sum(sm, r => r.invoice_value), collect = sum(sm, r => r.payments);
+    const o = { month: k, row: m, opening, salesV, collect, inTotal: opening + salesV + collect,
+      expenses: sum(em, r => r.amount), commission: sum(sm, r => r.commission), creditSales: sum(sm, r => r.credit),
+      pubPay: sum(pm, r => r.payments), cashPurch: sum(pm, r => r.cash_purchases) };
+    o.outTotal = o.expenses + o.commission + o.creditSales + o.pubPay + o.cashPurch;
+    o.bm = Object.fromEntries([...PMS, 'معلق'].map(x => [x, { in: 0, out: 0 }]));
+    const pmOf = r => PMS.includes(r.pay_method) ? r.pay_method : 'نقدى';
+    sm.forEach(r => { o.bm[r.is_pending ? 'معلق' : pmOf(r)].in += num(r.invoice_value) - num(r.commission) - num(r.credit) + num(r.payments); });
+    pm.forEach(r => { o.bm[pmOf(r)].out += num(r.payments) + num(r.cash_purchases); });
+    em.forEach(r => { o.bm[pmOf(r)].out += num(r.amount); });
+    o.closing = o.inTotal - o.outTotal;                         // خزينة جديدة (خزنة ورقى)
+    o.pending = sum(pend.filter(p => pendActive(p, k)), p => p.amount);   // المعلق: يُحتسب كمبلغ موجود (فواتير نقدى لم تسدد / سلف)
+    o.holdings = num(m.cash_box) + num(m.drawer) + num(m.post) + num(m.bank);
+    o.actual = o.holdings + o.pending;                           // الجرد الفعلي + المعلق
+    o.variance = o.actual - o.closing;                           // سالب = عجز، موجب = زيادة
+    o.cash = num(m.cash_box) + num(m.drawer);
+    out.push(o); prev = o;
+  });
+  return out;
+}
+
+/* ============================ تعريف الكيانات (نماذج + جداول الإدخال) ============================ */
+const TERMS = ['الاول', 'الثانى'];
+const ENT = {
+  sales: { table: 'sales', title: 'المبيعات', dateKey: 'sale_date', ref: 'customers', refKey: 'customer_id', refLabel: 'اسم العميل', per: true, term: true,
+    fields: [['invoice_no', 'رقم الفاتورة', 'text'], ['customer_id', 'اسم العميل', 'ref'], ['inv_type', 'نوع الفاتورة', 'text'], ['invoice_value', 'قيمة الفاتورة', 'num'], ['commission', 'العمولة', 'num'], ['credit', 'الاجل', 'num'], ['payments', 'الدفعات', 'num'], ['pay_method', 'طريقة الدفع', 'pm'], ['sale_date', 'التاريخ', 'date'], ['term', 'الترم', 'term']],
+    cols: ['invoice_no', 'customer_id', 'inv_type', 'invoice_value', 'commission', 'credit', 'due', 'payments', 'pay_method', 'sale_date', 'term'], sums: ['invoice_value', 'commission', 'credit', 'due', 'payments'] },
+  purchases: { table: 'purchases', title: 'المشتريات', dateKey: 'purchase_date', ref: 'publishers', refKey: 'publisher_id', refLabel: 'اسم الناشر', per: true, term: true,
+    fields: [['publisher_id', 'اسم الناشر', 'ref'], ['cash_purchases', 'مشتريات نقدى', 'num'], ['credit_purchases', 'مشتريات اجل', 'num'], ['payments', 'دفعات ناشرين', 'num'], ['pay_method', 'طريقة الدفع', 'pm0'], ['purchase_date', 'التاريخ', 'date'], ['term', 'الترم', 'term']],
+    cols: ['publisher_id', 'cash_purchases', 'credit_purchases', 'payments', 'pay_method', 'purchase_date', 'term'], sums: ['cash_purchases', 'credit_purchases', 'payments'] },
+  expenses: { table: 'expenses', title: 'المصروفات', dateKey: 'expense_date', per: true,
+    fields: [['category', 'البند', 'cat'], ['amount', 'المبلغ', 'num'], ['pay_method', 'طريقة الدفع', 'pm'], ['description', 'بيان', 'text'], ['expense_date', 'التاريخ', 'date']],
+    cols: ['category', 'amount', 'pay_method', 'description', 'expense_date'], sums: ['amount'] },
+  customer_returns: { table: 'customer_returns', title: 'مرتجعات العملاء', dateKey: 'return_date', ref: 'customers', refKey: 'customer_id', refLabel: 'اسم العميل', term: true,
+    fields: [['customer_id', 'اسم العميل', 'ref'], ['amount', 'قيمة المرتجع', 'num'], ['return_date', 'التاريخ', 'date'], ['term', 'الترم', 'term'], ['note', 'ملاحظة', 'text']],
+    cols: ['customer_id', 'amount', 'return_date', 'term', 'note'], sums: ['amount'] },
+  publisher_returns: { table: 'publisher_returns', title: 'مرتجعات الناشرين', dateKey: 'return_date', ref: 'publishers', refKey: 'publisher_id', refLabel: 'اسم الناشر', term: true,
+    fields: [['publisher_id', 'اسم الناشر', 'ref'], ['amount', 'قيمة المرتجع', 'num'], ['return_date', 'التاريخ', 'date'], ['term', 'الترم', 'term'], ['note', 'ملاحظة', 'text']],
+    cols: ['publisher_id', 'amount', 'return_date', 'term', 'note'], sums: ['amount'] }
+};
+const LAB = { invoice_no: 'رقم الفاتورة', customer_id: 'اسم العميل', publisher_id: 'اسم الناشر', invoice_value: 'قيمة الفاتورة', commission: 'العمولة', credit: 'الاجل', payments: 'الدفعات', sale_date: 'التاريخ', purchase_date: 'التاريخ', expense_date: 'التاريخ', return_date: 'التاريخ', term: 'الترم', cash_purchases: 'مشتريات نقدى', credit_purchases: 'مشتريات اجل', category: 'البند', amount: 'المبلغ', description: 'بيان', note: 'ملاحظة', period: 'الشهر', pay_method: 'طريقة الدفع', inv_type: 'نوع الفاتورة', due: 'المستحق للدفع' };
+ENT.adj_c = { ref: 'customers', refLabel: 'اسم العميل' }; ENT.adj_p = { ref: 'publishers', refLabel: 'اسم الناشر' };
+const gridState = {};   // حالة الفلاتر لكل كيان
+
+function refName(ent, row) { const e = ENT[ent]; if (!e.ref) return ''; const m = S.data[e.ref].find(x => x.id === row[e.refKey]); return m ? m.name : ''; }
+const pmDisp = (ent, r) => {
+  if (ent === 'sales') return r.is_pending ? 'معلقة' : (num(r.payments) > 0 || ((r.inv_type || 'اجل') === 'نقدى' && num(r.invoice_value) > 0)) ? (r.pay_method || 'نقدى') : '—';
+  if (ent === 'purchases') return (num(r.payments) > 0 || num(r.cash_purchases) > 0) ? (r.pay_method || 'نقدى') : '—';
+  return r.pay_method || 'نقدى';
+};
+function cellVal(ent, row, k) {
+  if (k === 'customer_id' || k === 'publisher_id') return refName(ent, row);
+  if (k === 'pay_method') return pmDisp(ent, row);
+  if (k === 'due') return (row.inv_type || 'اجل') === 'نقدى' ? num(row.invoice_value) - num(row.commission) : 0;
+  return row[k];
+}
+function isNum(k) { return ['due', 'invoice_value', 'commission', 'credit', 'payments', 'cash_purchases', 'credit_purchases', 'amount'].includes(k); }
+
+function salesForm(row, idp) {
+  const st = settings(), id = k => `${idp}_${k}`, v = row || {};
+  return `<div><label class="l" for="${id('invoice_no')}">رقم الفاتورة (تلقائي)</label><input id="${id('invoice_no')}" class="num" value="${esc(row ? row.invoice_no : (S.nextInvNo || ''))}"></div>
+   <div><label class="l" for="${id('customer_id')}">اسم العميل</label><input id="${id('customer_id')}" list="${idp}_dl" data-ref="customers" autocomplete="off" value="${esc(row ? refName('sales', row) : '')}" placeholder="اكتب أو اختر — الجديد يُضاف تلقائياً"><datalist id="${idp}_dl">${S.data.customers.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>
+   <div><label class="l" for="${id('inv_type')}">نوع الفاتورة</label><select id="${id('inv_type')}"><option ${(v.inv_type || 'اجل') === 'اجل' ? 'selected' : ''}>اجل</option><option ${v.inv_type === 'نقدى' ? 'selected' : ''}>نقدى</option></select></div>
+   <div><label class="l" for="${id('invoice_value')}">قيمة الفاتورة</label><input id="${id('invoice_value')}" class="num money" inputmode="decimal" value="${mv(v.invoice_value)}" placeholder="0"></div>
+   <div><label class="l" for="${id('commission')}">العمولة</label><input id="${id('commission')}" class="num money" inputmode="decimal" value="${mv(v.commission)}" placeholder="0"></div>
+   <div><label class="l" for="${id('credit')}">الاجل</label><input id="${id('credit')}" class="num money" inputmode="decimal" value="${mv(v.credit)}" placeholder="0"></div>
+   <div><label class="l" id="${id('duel')}">المستحق</label><div class="due num" id="${id('due')}">0.00</div></div>
+   <div><label class="l" for="${id('payments')}">دفعة مدفوعة (إن وُجدت)</label><input id="${id('payments')}" class="num money" inputmode="decimal" value="${mv(v.payments)}" placeholder="0"></div>
+   <div><label class="l" for="${id('pay_method')}">طريقة الدفع</label>${pmSel(id('pay_method'), v.pay_method, true)}</div>
+   <div id="${id('pendw')}" style="display:none"><label class="chk2"><input type="checkbox" id="${id('pending')}" ${v.is_pending ? 'checked' : ''}> معلقة (نقدى لم يُسدد بعد)</label></div>
+   <div><label class="l" for="${id('sale_date')}">التاريخ</label><input id="${id('sale_date')}" type="date" value="${esc(v.sale_date || today())}"></div>
+   <div><label class="l" for="${id('term')}">الترم</label><select id="${id('term')}">${TERMS.map(x => `<option ${((v.term || st.current_term || 'الاول') === x) ? 'selected' : ''}>${x}</option>`).join('')}</select></div>`;
+}
+function wireSales(idp, row) {
+  const g = k => $('#' + idp + '_' + k); if (!g('inv_type')) return;
+  let manual = !!row && (row.inv_type || 'اجل') !== 'نقدى' && Math.abs(num(row.credit) - (num(row.invoice_value) - num(row.commission))) > .005, typeTouched = !!row;
+  const upd = () => {
+    const cash = g('inv_type').value === 'نقدى', v = num(g('invoice_value').value), c = num(g('commission').value), p = num(g('payments').value), cr = g('credit');
+    if (cash) { cr.value = '0'; cr.readOnly = true; } else { cr.readOnly = false; if (!manual) { const d = r2(v - c); cr.value = d ? mv(d) : ''; } }
+    g('duel').textContent = cash ? 'المستحق للدفع' : 'الأجل المستحق'; g('due').textContent = fmt(cash ? v - c : num(cr.value));
+    const showP = cash && v > 0; g('pendw').style.display = showP ? '' : 'none'; if (!showP) g('pending').checked = false;
+    const needM = p > 0 || (cash && v > 0 && !g('pending').checked), pm = g('pay_method'); pm.disabled = !needM;
+    if (!needM) pm.value = ''; else if (!pm.value) pm.value = 'نقدى';
+  };
+  g('credit').addEventListener('input', () => { manual = true; upd(); });
+  ['invoice_value', 'commission', 'payments'].forEach(k => g(k).addEventListener('input', upd));
+  g('inv_type').addEventListener('change', () => { typeTouched = true; manual = false; upd(); });
+  g('pending').addEventListener('change', upd);
+  g('customer_id').addEventListener('input', () => { if (typeTouched) return; const cu = S.data.customers.find(x => norm(x.name) === norm(g('customer_id').value)); if (cu) { g('inv_type').value = cu.type === 'نقدى' ? 'نقدى' : 'اجل'; manual = false; upd(); } });
+  upd();
+}
+function wirePurch(idp) {
+  const g = k => $('#' + idp + '_' + k); if (!g('cash_purchases')) return;
+  const upd = () => { const need = num(g('cash_purchases').value) > 0 || num(g('payments').value) > 0, pm = g('pay_method'); pm.disabled = !need; if (!need) pm.value = ''; else if (!pm.value) pm.value = 'نقدى'; };
+  ['cash_purchases', 'payments'].forEach(k => g(k).addEventListener('input', upd)); upd();
+}
+function wireForm(ent, idp, row) { if (ent === 'sales') wireSales(idp, row); else if (ent === 'purchases') wirePurch(idp); }
+async function readSales(idp) {
+  const g = k => $('#' + idp + '_' + k), cash = g('inv_type').value === 'نقدى';
+  const rec = { invoice_no: g('invoice_no').value.trim(), customer_id: await resolveRef('sales', g('customer_id').value), inv_type: g('inv_type').value, invoice_value: r2(num(g('invoice_value').value)), commission: r2(num(g('commission').value)), payments: r2(num(g('payments').value)), sale_date: g('sale_date').value, term: g('term').value };
+  rec.is_pending = cash && rec.invoice_value > 0 && g('pending').checked; rec.credit = cash ? 0 : r2(num(g('credit').value));
+  if (!rec.sale_date) throw new Error('التاريخ مطلوب');
+  if (!rec.invoice_value && !rec.payments) throw new Error('أدخل قيمة فاتورة أو دفعة');
+  const needM = rec.payments > 0 || (cash && rec.invoice_value > 0 && !rec.is_pending);
+  rec.pay_method = needM ? (g('pay_method').value || 'نقدى') : '';
+  if (!rec.invoice_value && !rec.invoice_no) rec.invoice_no = rec.sale_date;   // دفعة بدون فاتورة: يُكتب التاريخ في خانة رقم الفاتورة
+  return rec;
+}
+async function createPending(sale) {
+  const cu = S.data.customers.find(x => x.id === sale.customer_id), month = sale.period || String(sale.sale_date).slice(0, 7);
+  const { error } = await sb.from('pending_items').insert({ month, label: `فاتورة ${sale.invoice_no} — ${cu ? cu.name : ''}`, kind: 'فاتورة نقدى لم تسدد', amount: r2(num(sale.invoice_value) - num(sale.commission)), carry: true, settled: false, sale_id: sale.id });
+  if (error) toast('حُفظت الفاتورة لكن تعذّر تسجيلها في المعلق (تأكد أن شهرها موجود في الخزنة): ' + error.message, 1); else invalidate('pending_items');
+}
+function formHtml(ent, row, idp) {
+  if (ent === 'sales') return salesForm(row, idp);
+  const e = ENT[ent], st = settings();
+  const CATS = [...new Set([...(S.data.expenses || []).map(x => x.category), 'تأسيس', 'شحن', 'نقل', 'اكرامية', 'مرتبات'])].filter(Boolean);
+  return e.fields.map(([k, l, t]) => {
+    const v = row ? row[k] : null; const id = `${idp}_${k}`;
+    let inp;
+    if (t === 'ref') inp = `<input id="${id}" list="${idp}_dl" data-ref="${e.ref}" autocomplete="off" value="${esc(row ? refName(ent, row) : '')}" placeholder="اكتب أو اختر — الجديد يُضاف تلقائياً"><datalist id="${idp}_dl">${S.data[e.ref].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist>`;
+    else if (t === 'num') inp = `<input id="${id}" class="num money" inputmode="decimal" value="${v == null || v === '' ? '' : mv(v)}" placeholder="0">`;
+    else if (t === 'date') inp = `<input id="${id}" type="date" value="${esc(v || today())}">`;
+    else if (t === 'term') inp = `<select id="${id}">${TERMS.map(x => `<option ${((v || st.current_term || 'الاول') === x) ? 'selected' : ''}>${x}</option>`).join('')}</select>`;
+    else if (t === 'pm') inp = pmSel(id, v);
+    else if (t === 'pm0') inp = pmSel(id, v, true);
+    else if (t === 'cat') inp = `<input id="${id}" list="${idp}_cat" value="${esc(v || '')}" placeholder="مثال: شحن"><datalist id="${idp}_cat">${CATS.map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+    else inp = `<input id="${id}" value="${esc(v || '')}">`;
+    return `<div><label class="l" for="${id}">${l}</label>${inp}</div>`;
+  }).join('');
+}
+async function resolveRef(ent, name) {
+  const e = ENT[ent]; name = name.trim(); if (!name) throw new Error(`${e.refLabel} مطلوب`);
+  let m = S.data[e.ref].find(x => x.name === name) || S.data[e.ref].find(x => norm(x.name) === norm(name));
+  if (m) return m.id;
+  const rec = e.ref === 'customers' ? { name, type: 'اجل' } : { name };
+  const { data, error } = await sb.from(e.ref).insert(rec).select().single(); if (error) throw error;
+  S.data[e.ref].push(data); toast(`➕ أُضيف ${e.ref === 'customers' ? 'عميل' : 'ناشر'} جديد: ${name}`); return data.id;
+}
+async function readForm(ent, idp) {
+  if (ent === 'sales') return readSales(idp);
+  const e = ENT[ent], rec = {};
+  for (const [k, , t] of e.fields) {
+    const el = $('#' + idp + '_' + k); let v = el.value;
+    if (t === 'ref') rec[e.refKey] = await resolveRef(ent, v);
+    else if (t === 'num') rec[k] = r2(num(v));
+    else rec[k] = v.trim();
+  }
+  if (e.dateKey && !rec[e.dateKey]) throw new Error('التاريخ مطلوب');
+  return rec;
+}
+async function pageGrid(ent) {
+  const e = ENT[ent]; await load('customers', 'publishers', 'app_settings', ent); if (ent === 'sales') S.nextInvNo = await nextInv();
+  const gs = gridState[ent] = gridState[ent] || { q: '', per: '', term: '', ref: '', limit: ent === 'sales' ? 1000 : 200, sort: ent === 'sales' ? 'inv' : 'date' };
+  const admin = isAdmin();
+  const el = $('#page');
+  el.innerHTML = `<div class="card noprint wr"><h3>➕ إدخال جديد — ${e.title}</h3>${!admin ? '<div class="note">تظهر لك الحركات التي أدخلتها أنت فقط، ويمكنك تعديل/حذف حركتك خلال 24 ساعة من إدخالها.</div>' : ''}
+   <div class="grid g4" id="nf">${formHtml(ent, null, 'nf')}</div><div class="sp"></div><button class="btn" id="nfAdd">💾 حفظ</button></div>
+   <div class="card"><div class="row noprint">
+     <div><label class="l">بحث</label><input id="fq" value="${esc(gs.q)}" placeholder="اكتب للبحث..."></div>
+     ${e.per ? `<div class="fit"><label class="l">الشهر</label><select id="fper"><option value="">الكل</option>${[...new Set(S.data[ent].map(r => r.period))].filter(Boolean).sort().map(p => `<option value="${p}" ${gs.per === p ? 'selected' : ''}>${monthLabel(p)}</option>`).join('')}</select></div>` : ''}
+     ${e.term ? `<div class="fit"><label class="l">الترم</label><select id="fterm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` : ''}
+     ${e.ref ? `<div><label class="l">${e.refLabel}</label><input id="fref" list="fref_dl" value="${esc(gs.ref)}" placeholder="الكل"><datalist id="fref_dl">${S.data[e.ref].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>` : ''}
+     ${e.fields.some(f => f[0] === 'pay_method') ? `<div class="fit"><label class="l">طريقة الدفع</label><select id="fpm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}${ent === 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="inv" ${gs.sort === 'inv' ? 'selected' : ''}>رقم الفاتورة (الأصغر ← الأكبر)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>الأحدث أولاً</option></select></div>` : ''}<div class="fit"><button class="btn gh" id="fcsv">⬇️ CSV</button> <button class="btn gh" id="fprint">🖨️ طباعة</button></div></div>
+     <div class="sp"></div><div id="gridbox"></div></div>`;
+  wireForm(ent, 'nf');
+  const draw = () => {
+    let rows = S.data[ent].slice();
+    if (gs.per) rows = rows.filter(r => r.period === gs.per);
+    if (gs.term) rows = rows.filter(r => r.term === gs.term);
+    if (gs.pm) rows = rows.filter(r => (r.pay_method || 'نقدى') === gs.pm);
+    if (gs.ref) rows = rows.filter(r => norm(refName(ent, r)).includes(norm(gs.ref)));
+    if (gs.q) { const q = norm(gs.q); rows = rows.filter(r => e.cols.some(k => norm(String(cellVal(ent, r, k) ?? '')).includes(q))); }
+    const asc = ent === 'sales' && gs.sort === 'inv';
+    if (asc) rows.sort(invCmp); else rows.sort((a, b) => String(b[e.dateKey]).localeCompare(String(a[e.dateKey])) || b.id - a.id);
+    const shown = asc ? rows.slice(-gs.limit) : rows.slice(0, gs.limit);
+    const canEdit = r => canWrite() && (admin || (r.created_by === me.id && Date.now() - new Date(r.created_at).getTime() < 864e5));
+    $('#gridbox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد السجلات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr><th>#</th>${e.cols.map(k => `<th class="${isNum(k) ? 'n' : ''}">${LAB[k]}</th>`).join('')}${e.per && admin ? '<th>الشهر</th>' : ''}<th class="noprint"></th></tr></thead><tbody>
+      ${shown.map((r, i) => `<tr data-id="${r.id}"><td class="mut num">${i + 1}</td>${e.cols.map(k => { const v = cellVal(ent, r, k); return isNum(k) ? `<td class="n">${fmt(v)}</td>` : `<td>${esc(v)}</td>`; }).join('')}${e.per && admin ? `<td class="mut">${esc(monthLabel(r.period))}</td>` : ''}<td class="noprint">${canEdit(r) ? `<button class="btn gh sm" data-ed="${r.id}">✏️</button> <button class="btn gh sm" data-del="${r.id}">🗑️</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="20" class="mut" style="text-align:center;padding:24px">لا توجد سجلات</td></tr>`}</tbody>
+      ${admin || true ? `<tfoot><tr><td>الإجمالي</td>${e.cols.map(k => e.sums.includes(k) ? `<td class="n">${fmt(sum(rows, r => r[k]))}</td>` : '<td></td>').join('')}${e.per && admin ? '<td></td>' : ''}<td></td></tr></tfoot>` : ''}</table></div>
+      ${rows.length > shown.length ? `<div style="text-align:center;margin-top:10px"><button class="btn gh" id="more">عرض المزيد (${rows.length - shown.length})</button></div>` : ''}`;
+    $('#more') && ($('#more').onclick = () => { gs.limit += 400; draw(); });
+    $$('[data-del]', el).forEach(b => b.onclick = async () => { if (!confirm('حذف هذا السجل نهائياً؟')) return; const { error } = await sb.from(e.table).delete().eq('id', +b.dataset.del); if (error) return toast(error.message, 1); invalidate(ent); await load(ent); draw(); toast('تم الحذف'); });
+    $$('[data-ed]', el).forEach(b => b.onclick = () => editModal(ent, S.data[ent].find(x => x.id === +b.dataset.ed), () => { invalidate(ent); load(ent).then(draw); }));
+  };
+  draw();
+  $('#nfAdd').onclick = async () => {
+    const btn = $('#nfAdd'); btn.disabled = true;
+    try {
+      const rec = await readForm(ent, 'nf'); const { data, error } = await sb.from(e.table).insert(rec).select().single(); if (error) throw error;
+      if (ent === 'sales' && data.is_pending) await createPending(data);
+      S.data[ent].push(data); toast('تم الحفظ ✔'); await load('customers', 'publishers');
+      ['invoice_no', 'invoice_value', 'commission', 'credit', 'payments', 'cash_purchases', 'credit_purchases', 'amount', 'description', 'note'].forEach(k => { const x = $('#nf_' + k); if (x) x.value = ''; });
+      const rf = $('#nf_' + (e.refKey || '')); if (rf) { rf.value = ''; rf.focus(); const h = rf.parentElement.querySelector('.newh'); if (h) h.textContent = ''; }
+      if (ent === 'sales') { S.nextInvNo = await nextInv(); $('#nf_invoice_no').value = S.nextInvNo; $('#nf_invoice_value').dispatchEvent(new Event('input')); }
+      draw(); const tw = $('#gridbox .tw'); if (tw && ent === 'sales' && gs.sort === 'inv') tw.scrollTop = tw.scrollHeight;
+    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+  };
+  $('#nf').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('#nfAdd').click(); } });
+  const bind = (id, k) => { const x = $('#' + id); if (x) x.oninput = x.onchange = () => { gs[k] = x.value; gs.limit = 200; draw(); }; };
+  bind('fq', 'q'); bind('fpm', 'pm'); bind('fsort', 'sort'); bind('fper', 'per'); bind('fterm', 'term'); bind('fref', 'ref');
+  $('#fprint').onclick = () => printDialog(gridPrintCfg(ent), { term: gs.term, ref: gs.ref });
+  $('#fcsv').onclick = () => { const rows = S.data[ent]; dl(`${ent}.csv`, toCsv(e.cols.map(k => LAB[k]), rows.map(r => e.cols.map(k => cellVal(ent, r, k))))); };
+}
+function editModal(ent, row, done) {
+  const e = ENT[ent]; const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="m"><h3>تعديل سجل — ${e.title}</h3><div class="grid g2" id="ef">${formHtml(ent, row, 'ef')}</div><div class="sp"></div><div class="row"><button class="btn fit" id="efS">💾 حفظ التعديل</button><button class="btn gh fit" id="efC">إلغاء</button></div></div>`;
+  document.body.appendChild(m); wireForm(ent, 'ef', row);
+  $('#efC').onclick = () => m.remove();
+  $('#efS').onclick = async () => { try { const rec = await readForm(ent, 'ef'); const { error } = await sb.from(e.table).update(rec).eq('id', row.id); if (error) throw error;
+      if (ent === 'sales' && isAdmin()) { if (rec.is_pending && !row.is_pending) await createPending({ ...row, ...rec }); else if (!rec.is_pending && row.is_pending) { await sb.from('pending_items').delete().eq('sale_id', row.id).eq('settled', false); invalidate('pending_items'); } }
+      m.remove(); toast('تم التعديل ✔'); done(); } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } };
+}
+
+
+/* ============================ الطباعة (نافذة تحديد المحتوى والفترة) ============================ */
+const APPCSS = () => (document.querySelector('style') || {}).textContent || '';
+const PRINTCSS = `body{background:#fff!important;color:#000!important;height:auto}.tw{max-height:none!important;overflow:visible!important;border:0!important}table{font-size:inherit}th{position:static!important;background:#eee!important;border:1px solid #888!important;color:#000}td{white-space:normal!important;border:1px solid #999!important}tfoot td{position:static!important;background:#f3f3f3!important}tbody tr:hover{background:none}thead{display:table-header-group}table th,table td{text-align:center!important}.lay{width:100%;border-collapse:collapse}.lay>tbody>tr>td,.lay>tfoot>tr>td{border:0!important;padding:0!important}.lay>tfoot{display:table-footer-group}th{white-space:normal!important}.pf{margin-top:6mm;min-height:20mm;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #777;padding-top:2mm;font-size:11px;color:#222}.pf .pfl{flex:1;white-space:pre-line}.pf img{max-height:20mm;max-width:50mm;object-fit:contain}.stp{border:2px solid #1d3fb8;color:#1d3fb8;border-radius:10px;padding:3px 14px;font-weight:800;transform:rotate(-4deg);text-align:center;font-size:12px}.ph img{height:54px;max-width:120px;object-fit:contain}tr{page-break-inside:avoid}.card{box-shadow:none!important;break-inside:avoid;border:1px solid #bbb!important}.kpi{box-shadow:none!important;border:1px solid #bbb!important}.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}.pt{font-size:1.5em;font-weight:800}.pm{font-size:.85em;color:#444}.sm2{font-size:.85em;margin:2px 0}body{font-weight:600}table{font-size:1.06em}td{font-weight:700!important;color:#000!important;border:1px solid #000!important;padding:5px 6px!important}th{font-weight:800!important;color:#000!important;border:1px solid #000!important;background:#d9d9d9!important;padding:6px!important}td.n,.num{font-weight:800!important}tfoot td{font-weight:800!important;background:#e8e8e8!important}.pt{font-weight:800}`;
+function printHtml(inner, o) {
+  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(o.title)}</title><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"><style>${APPCSS()}${PRINTCSS}@page{size:A4 ${o.orientation || 'portrait'};margin:12mm}</style></head><body style="font-size:${o.font || 12}px;padding:0"><table class="lay"><tbody><tr><td>${inner}</td></tr></tbody>${o.stamp === false ? '' : `<tfoot><tr><td>${pFoot(o)}</td></tr></tfoot>`}</table></body></html>`;
+  if (window.__printHook) { window.__printHook(html); return; }
+  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;right:-9999px;bottom:0;width:1px;height:1px;border:0';
+  document.body.appendChild(f); const d = f.contentDocument; d.open(); d.write(html); d.close();
+  const go = () => { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { toast('تعذّرت الطباعة', 1); } setTimeout(() => f.remove(), 3000); };
+  ((d.fonts && d.fonts.ready) ? d.fonts.ready : Promise.resolve()).then(() => setTimeout(go, 250));
+}
+const brand = () => { const st = settings(); return { name: st.store_name || 'First - Bookstore', logo: st.logo || '', foot: st.footer_text || '', stampImg: st.stamp_img || '', stampTxt: st.stamp_text || st.store_name || 'First - Bookstore' }; };
+const pHead = (title, lines, o) => { const b = brand(); return `<div class="ph"><div style="display:flex;gap:12px;align-items:center">${o.logo !== false && b.logo ? `<img src="${b.logo}" alt="">` : ''}<div><div class="pt">${esc(title)}</div>${lines.map(l => `<div class="sm2">${esc(l)}</div>`).join('')}</div></div><div class="pm" style="text-align:left">${esc(b.name)}${o.meta ? `<br>طُبع: ${new Date().toLocaleString('en-GB')}<br>بواسطة: ${esc(me.full_name || me.email)}` : ''}</div></div>`; };
+const pFoot = o => { if (o.stamp === false) return ''; const b = brand(); return `<div class="pf"><div class="pfl">${esc(b.foot)}</div><div class="pst">${b.stampImg ? `<img src="${b.stampImg}" alt="">` : `<div class="stp">${esc(b.stampTxt)}</div>`}</div></div>`; };
+const invNo = v => /^\d+$/.test(String(v == null ? '' : v).trim()) ? parseInt(v, 10) : null;
+const invOk = (v, o) => { if (o.i1 === '' && o.i2 === '') return true; const n = invNo(v); if (n == null) return false; return (o.i1 === '' || n >= +o.i1) && (o.i2 === '' || n <= +o.i2); };
+const dOk = (d, o) => (!o.from || d >= o.from) && (!o.to || d <= o.to);
+/** cfg: { key,title, cols:[{k,l,t:'m'|'p'|'t',sum}], filters:{date,invoice,term,ref,hidden}, build(o)->{rows,total?} } */
+function printDialog(cfg, def = {}) {
+  const f = cfg.filters || {}, sv = (() => { try { return JSON.parse(lsGet('print_' + cfg.key, '{}')); } catch (e) { return {}; } })();
+  const m = document.createElement('div'); m.className = 'modal';
+  const sel = (sv.cols && sv.cols.length) ? sv.cols : cfg.cols.filter(c => !c.off).map(c => c.k);
+  const defOr = sv.orientation || (sel.length > 7 ? 'landscape' : 'portrait');
+  m.innerHTML = `<div class="m" style="max-width:720px"><h3>🖨️ إعدادات الطباعة — ${esc(cfg.title)}</h3>
+   <div class="grid g2"><div style="grid-column:1/-1"><label class="l">عنوان التقرير</label><input id="pt" value="${esc(cfg.title)}"></div>
+   ${f.date ? `<div><label class="l">من تاريخ</label><input type="date" id="pfrom" value="${esc(def.from || '')}"></div><div><label class="l">إلى تاريخ</label><input type="date" id="pto" value="${esc(def.to || '')}"></div>` : ''}
+   ${f.invoice ? `<div><label class="l">من رقم فاتورة</label><input class="num" id="pi1" inputmode="numeric" placeholder="مثال: 100"></div><div><label class="l">إلى رقم فاتورة</label><input class="num" id="pi2" inputmode="numeric" placeholder="مثال: 250"></div>` : ''}
+   ${f.term ? `<div><label class="l">الترم</label><select id="pterm"><option value="">الكل</option>${TERMS.map(t => `<option ${def.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` : ''}
+   ${f.ref ? `<div><label class="l">${esc(f.ref.label)}</label><input id="pref" list="pref_dl" value="${esc(def.ref || '')}" placeholder="الكل"><datalist id="pref_dl">${f.ref.list.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>` : ''}
+   ${f.hidden ? `<div style="display:flex;align-items:flex-end"><label style="display:flex;gap:6px;align-items:center;margin-bottom:9px"><input type="checkbox" id="phid" ${def.hidden ? 'checked' : ''}> إظهار الحسابات المخفية في Excel</label></div>` : ''}
+   ${f.order ? `<div><label class="l">الترتيب</label><select id="pord"><option value="asc">من الأقدم للأحدث</option><option value="desc">من الأحدث للأقدم</option></select></div>` : ''}</div>
+   ${f.invoice ? '<div class="mut" style="font-size:12px;margin-top:4px">نطاق الفواتير يشمل الأرقام العددية فقط (الفواتير مثل 7-13 تُستثنى عند تحديده).</div>' : ''}
+   <label class="l" style="margin-top:12px">الأعمدة التي تظهر في الورقة</label><div class="row" id="pcols" style="gap:6px 14px">${cfg.cols.map(c => `<label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" data-c="${c.k}" ${sel.includes(c.k) ? 'checked' : ''}> ${esc(c.l)}</label>`).join('')}</div>
+   <div class="row" style="margin-top:12px;gap:6px 14px"><label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" id="ptot" ${sv.totals === false ? '' : 'checked'}> صف الإجمالي</label><label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" id="pnum" ${sv.numbering === false ? '' : 'checked'}> ترقيم الصفوف</label><label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" id="pmeta" ${sv.meta === false ? '' : 'checked'}> تاريخ الطباعة واسم المستخدم</label><label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" id="pstamp" ${sv.stamp === false ? '' : 'checked'}> الطابع والتذييل</label><label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" id="plogo" ${sv.logo === false ? '' : 'checked'}> اللوجو</label></div>
+   <div class="grid g2" style="margin-top:12px"><div><label class="l">اتجاه الورقة</label><select id="por"><option value="portrait" ${defOr === 'portrait' ? 'selected' : ''}>عمودي</option><option value="landscape" ${defOr === 'landscape' ? 'selected' : ''}>أفقي</option></select></div><div><label class="l">حجم الخط</label><select id="pfs"><option value="10" ${sv.font == 10 ? 'selected' : ''}>صغير</option><option value="12" ${!sv.font || sv.font == 12 ? 'selected' : ''}>متوسط</option><option value="14" ${sv.font == 14 ? 'selected' : ''}>كبير</option></select></div></div>
+   <div class="mut" id="pcnt" style="margin:12px 0"></div><div class="row"><button class="btn fit" id="pgo">🖨️ طباعة</button><button class="btn gh fit" id="pcl">إلغاء</button></div></div>`;
+  document.body.appendChild(m);
+  const read = () => ({ title: $('#pt', m).value.trim() || cfg.title, from: f.date ? $('#pfrom', m).value : '', to: f.date ? $('#pto', m).value : '', i1: f.invoice ? $('#pi1', m).value.trim() : '', i2: f.invoice ? $('#pi2', m).value.trim() : '',
+    term: f.term ? $('#pterm', m).value : '', ref: f.ref ? $('#pref', m).value.trim() : '', hidden: f.hidden ? $('#phid', m).checked : false, order: f.order ? $('#pord', m).value : 'asc',
+    cols: $$('#pcols input', m).filter(i => i.checked).map(i => i.dataset.c), totals: $('#ptot', m).checked, numbering: $('#pnum', m).checked, meta: $('#pmeta', m).checked, stamp: $('#pstamp', m).checked, logo: $('#plogo', m).checked, orientation: $('#por', m).value, font: +$('#pfs', m).value });
+  const cnt = () => { try { $('#pcnt', m).textContent = 'عدد السجلات التي ستُطبع: ' + cfg.build(read()).rows.length; } catch (e) { $('#pcnt', m).textContent = ''; } };
+  m.addEventListener('input', cnt); m.addEventListener('change', cnt); cnt();
+  $('#pcl', m).onclick = () => m.remove();
+  $('#pgo', m).onclick = () => {
+    const o = read(); if (!o.cols.length) return toast('اختر عموداً واحداً على الأقل', 1);
+    lsSet('print_' + cfg.key, JSON.stringify({ cols: o.cols, totals: o.totals, numbering: o.numbering, meta: o.meta, stamp: o.stamp, logo: o.logo, orientation: o.orientation, font: o.font }));
+    const out = cfg.build(o), cols = cfg.cols.filter(c => o.cols.includes(c.k));
+    const cell = (c, v) => c.t === 'm' ? fmt(v) : c.t === 'p' ? pct(v) : esc(v == null ? '' : v);
+    const tot = o.totals ? (out.total || Object.fromEntries(cfg.cols.filter(c => c.sum).map(c => [c.k, sum(out.rows, r => r[c.k])]))) : null;
+    const lines = []; if (o.from || o.to) lines.push(`الفترة: من ${o.from || '—'} إلى ${o.to || '—'}`); if (o.i1 || o.i2) lines.push(`الفواتير: من رقم ${o.i1 || '—'} إلى رقم ${o.i2 || '—'}`); if (o.term) lines.push('الترم: ' + o.term); if (o.ref) lines.push((f.ref ? f.ref.label : '') + ': ' + o.ref); lines.push('عدد السجلات: ' + out.rows.length);
+    const body = `<table><thead><tr>${o.numbering ? '<th>#</th>' : ''}${cols.map(c => `<th class="${c.t === 'm' || c.t === 'p' ? 'n' : ''}">${esc(c.l)}</th>`).join('')}</tr></thead><tbody>${out.rows.map((r, i) => `<tr>${o.numbering ? `<td>${i + 1}</td>` : ''}${cols.map(c => `<td class="${c.t === 'm' || c.t === 'p' ? 'n' : ''}">${cell(c, r[c.k])}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length + 1}" style="text-align:center">لا توجد بيانات في هذه الفترة</td></tr>`}</tbody>${tot ? `<tfoot><tr>${o.numbering ? '<td></td>' : ''}${cols.map((c, i) => `<td class="${c.t === 'm' || c.t === 'p' ? 'n' : ''}">${i === 0 && !(c.k in tot) ? 'الإجمالي' : (c.k in tot ? cell(c, tot[c.k]) : '')}</td>`).join('')}</tr></tfoot>` : ''}</table>`;
+    m.remove(); printHtml(pHead(o.title, lines, o) + body, o);
+  };
+}
+/** طباعة أقسام صفحة (لوحة المعلومات / الخزنة) باختيار ما يظهر */
+function printSections(title) {
+  const secs = $$('#page [data-psec]'); if (!secs.length) return toast('لا يوجد ما يُطبع', 1);
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="m" style="max-width:560px"><h3>🖨️ إعدادات الطباعة — ${esc(title)}</h3><label class="l">الأقسام التي تظهر في الورقة</label>${secs.map((x, i) => `<label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" data-i="${i}" checked> ${esc(x.dataset.plabel || 'قسم ' + (i + 1))}</label>`).join('')}
+   <div class="grid g2" style="margin-top:10px"><div><label class="l">اتجاه الورقة</label><select id="por"><option value="portrait">عمودي</option><option value="landscape">أفقي</option></select></div><div><label class="l">حجم الخط</label><select id="pfs"><option value="10">صغير</option><option value="12" selected>متوسط</option><option value="14">كبير</option></select></div></div>
+   <label style="display:flex;gap:6px;align-items:center;margin:10px 0"><input type="checkbox" id="pmeta" checked> تاريخ الطباعة واسم المستخدم</label><label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="pstamp" checked> الطابع والتذييل</label><label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="plogo" checked> اللوجو</label><div class="row"><button class="btn fit" id="pgo">🖨️ طباعة</button><button class="btn gh fit" id="pcl">إلغاء</button></div></div>`;
+  document.body.appendChild(m); $('#pcl', m).onclick = () => m.remove();
+  $('#pgo', m).onclick = () => {
+    const pick = $$('input[data-i]', m).filter(i => i.checked).map(i => secs[+i.dataset.i]); if (!pick.length) return toast('اختر قسماً واحداً على الأقل', 1);
+    const sub = ($('#dm') || $('#tm')) ? [`الشهر: ${($('#dm') || $('#tm')).selectedOptions[0].textContent}`] : [];
+    const inner = pick.map(sec => { const c = sec.cloneNode(true); $$('.noprint,button,datalist', c).forEach(x => x.remove()); $$('input,select', c).forEach(x => { const sp = document.createElement('span'); sp.className = 'num'; sp.textContent = x.tagName === 'SELECT' ? x.selectedOptions[0].textContent : x.value; x.replaceWith(sp); }); return c.outerHTML; }).join('');
+    const o = { title, orientation: $('#por', m).value, font: +$('#pfs', m).value, meta: $('#pmeta', m).checked, stamp: $('#pstamp', m).checked, logo: $('#plogo', m).checked }; m.remove();
+    printHtml(pHead(title, sub, o) + inner, o);
+  };
+}
+const gridPrintCfg = ent => {
+  const e = ENT[ent];
+  return { key: ent, title: e.title, filters: { date: true, invoice: ent === 'sales', term: !!e.term, ref: e.ref ? { label: e.refLabel, list: S.data[e.ref] } : null, order: true },
+    cols: [...e.cols.map(k => ({ k, l: LAB[k], t: isNum(k) ? 'm' : 't', sum: e.sums.includes(k) })), ...(e.per ? [{ k: 'period', l: 'الشهر', t: 't', off: true }] : [])],
+    build(o) {
+      let rows = S.data[ent].filter(r => dOk(r[e.dateKey], o) && (!o.term || r.term === o.term) && (!o.ref || norm(refName(ent, r)).includes(norm(o.ref))) && (ent !== 'sales' || invOk(r.invoice_no, o)));
+      if (ent === 'sales') rows.sort(invCmp); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
+      return { rows: rows.map(r => ({ ...Object.fromEntries(e.cols.map(k => [k, cellVal(ent, r, k)])), period: monthLabel(r.period) })) };
+    } };
+};
+const balPrintCfg = isC => {
+  const cols = isC ? [['name', 'اسم العميل', 't', 0, 1], ['w', 'المسحوبات', 'm', 1, 1], ['p', 'المدفوعات', 'm', 1, 1], ['adj', 'تسويات (بدون خزنة)', 'm', 1, 1], ['net', 'الصافي', 'm', 1, 1], ['ret', 'المرتجع', 'm', 1, 1], ['netR', 'الصافي بعد المرتجع', 'm', 1, 1], ['com', 'العمولة', 'm', 1, 1], ['pct', 'النسبة المدفوعة', 'p', 0, 1], ['limit', 'الحد الائتماني', 'm', 0, 0], ['alert', 'التنبيه', 't', 0, 0], ['r1', 'مرتجع الترم الاول', 'm', 1, 0], ['net1', 'الصافى بعد المرتجع (ت1)', 'm', 1, 0], ['rr1', 'نسبة المرتجع', 'p', 0, 0], ['r2', 'مرتجع الترم التانى', 'm', 1, 0], ['net2', 'الصافي بعد المرتجع (ت2)', 'm', 1, 0], ['pct2', 'النسبه المدفوعة (ت2)', 'p', 0, 0]]
+    : [['name', 'اسم الناشر', 't', 0, 1], ['w', 'المسحوبات', 'm', 1, 1], ['p', 'الدفعات', 'm', 1, 1], ['adj', 'تسويات (بدون خزنة)', 'm', 1, 1], ['net', 'الصافي', 'm', 1, 1], ['ret', 'المرتجع', 'm', 1, 1], ['netR', 'الصافي بعد المرتجع', 'm', 1, 1], ['pct', 'النسبه المدفوعة', 'p', 0, 1], ['r1', 'مرتجع الترم الاول', 'm', 1, 0], ['net1', 'الصافى بعد المرتجع (ت1)', 'm', 1, 0], ['pct1', 'النسبة المدفوعة (ت1)', 'p', 0, 0], ['r2', 'مرتجع الترم التانى', 'm', 1, 0], ['net2', 'الصافي بعد المرتجع (ت2)', 'm', 1, 0], ['pct2', 'النسبه المدفوعة (ت2)', 'p', 0, 0]];
+  return { key: 'bal2' + (isC ? 'c' : 'p'), title: isC ? 'أرصدة العملاء' : 'أرصدة الناشرين', filters: { date: true, term: true, hidden: true },
+    cols: cols.map(([k, l, t, sm, on]) => ({ k, l, t, sum: !!sm, off: !on })),
+    build(o) { const d = (isC ? customerBalances : publisherBalances)(o.term || 'الكل', o.hidden, (o.from || o.to) ? { from: o.from, to: o.to } : null); return { rows: d.rows, total: { ...d.total, name: 'الاجمالى' } }; } };
+};
+/** كشف حساب: حركات + مرتجعات + تسويات في صف واحد لكل بند مع الصافي التراكمي بعد المرتجع */
+function stmtRows(isC, ent, o) {
+  const dk = isC ? 'sale_date' : 'purchase_date', rg = { from: o.from || '', to: o.to || '' }, tm = o.term || '', inv = { i1: o.i1 || '', i2: o.i2 || '' }, hasInv = isC && (inv.i1 || inv.i2);
+  const rows = (isC ? S.data.sales.filter(r => r.customer_id === ent.id) : S.data.purchases.filter(r => r.publisher_id === ent.id))
+    .filter(r => termOk(r.term, tm) && inR(r[dk], rg) && (!isC || invOk(r.invoice_no, inv)))
+    .map(r => { const pmv = pmDisp(isC ? 'sales' : 'purchases', r); return { kind: 'حركة', k: 0, id: r.id, invoice_no: r.invoice_no || '', commission: num(r.commission), cash_purchases: num(r.cash_purchases), credit: num(isC ? r.credit : r.credit_purchases), payments: num(r.payments), ret: 0, pm: pmv, date: r[dk], term: r.term, note: '' }; });
+  if (!hasInv) {
+    (isC ? S.data.customer_returns.filter(r => r.customer_id === ent.id) : S.data.publisher_returns.filter(r => r.publisher_id === ent.id)).filter(r => termOk(r.term, tm) && inR(r.return_date, rg))
+      .forEach(r => rows.push({ kind: 'مرتجع', k: 1, id: r.id, invoice_no: '', commission: 0, cash_purchases: 0, credit: 0, payments: 0, ret: num(r.amount), pm: '', date: r.return_date, term: r.term, note: r.note || '' }));
+    (S.data.adjustments || []).filter(r => r.kind === (isC ? 'c' : 'p') && (isC ? r.customer_id : r.publisher_id) === ent.id && termOk(r.term, tm) && inR(r.adj_date, rg))
+      .forEach(r => rows.push({ kind: 'تسوية', k: 2, id: r.id, invoice_no: '', commission: 0, cash_purchases: 0, credit: r.direction === 'drawn' ? num(r.amount) : 0, payments: r.direction === 'paid' ? num(r.amount) : 0, ret: 0, pm: '', date: r.adj_date, term: r.term, note: (r.direction === 'paid' ? 'تضاف على المدفوع' : 'تضاف على المسحوب') + (r.note ? ' — ' + r.note : '') + ' (بدون خزنة)' }));
+  }
+  rows.sort((a, b) => String(a.date).localeCompare(String(b.date)) || a.k - b.k || a.id - b.id);
+  let run = 0; rows.forEach(r => { run += r.credit - r.payments - r.ret; r.run = run; });
+  const total = { kind: 'الإجمالي', commission: sum(rows, r => r.commission), cash_purchases: sum(rows, r => r.cash_purchases), credit: sum(rows, r => r.credit), payments: sum(rows, r => r.payments), ret: sum(rows, r => r.ret), run };
+  return { rows, total };
+}
+const stmtCols = isC => (isC ? [['kind', 'النوع', 't'], ['invoice_no', 'رقم الفاتورة', 't'], ['commission', 'العمولة', 'm', 1], ['credit', 'المسحوب', 'm', 1], ['payments', 'الدفعات', 'm', 1], ['ret', 'المرتجع', 'm', 1], ['pm', 'طريقة الدفع', 't'], ['date', 'التاريخ', 't'], ['term', 'الترم', 't'], ['run', 'الصافي بعد المرتجع (تراكمي)', 'm'], ['note', 'ملاحظة', 't']]
+  : [['kind', 'النوع', 't'], ['cash_purchases', 'مشتريات نقدى', 'm', 1], ['credit', 'المسحوب', 'm', 1], ['payments', 'الدفعات', 'm', 1], ['ret', 'المرتجع', 'm', 1], ['pm', 'طريقة الدفع', 't'], ['date', 'التاريخ', 't'], ['term', 'الترم', 't'], ['run', 'الصافي بعد المرتجع (تراكمي)', 'm'], ['note', 'ملاحظة', 't']]).map(([k, l, t, sm]) => ({ k, l, t, sum: !!sm }));
+const stmtPrintCfg = (isC, ent) => ({ key: 'st2' + (isC ? 'c' : 'p'), title: 'كشف حساب ' + (isC ? 'عميل: ' : 'ناشر: ') + ent.name, filters: { date: true, invoice: isC, term: true },
+  cols: stmtCols(isC).map(c => ({ ...c, off: c.k === 'note' && false })), build(o) { return stmtRows(isC, ent, o); } });
+const mastersPrintCfg = isC => ({ key: 'ms' + (isC ? 'c' : 'p'), title: isC ? 'قائمة العملاء' : 'قائمة الناشرين', filters: {},
+  cols: isC ? [{ k: 'name', l: 'الاسم', t: 't' }, { k: 'type', l: 'النوع', t: 't' }, { k: 'credit_limit', l: 'الحد الائتماني', t: 'm' }, { k: 'show', l: 'يظهر في الأرصدة', t: 't', off: true }] : [{ k: 'name', l: 'الاسم', t: 't' }, { k: 'show', l: 'يظهر في الأرصدة', t: 't', off: true }],
+  build() { return { rows: (isC ? S.data.customers : S.data.publishers).slice().sort((a, b) => a.name.localeCompare(b.name, 'ar')).map(x => ({ ...x, show: x.show_in_balances ? 'نعم' : 'لا' })) }; } });
+
+
+/* ============================ الصفحات ============================ */
+async function pageDashboard() {
+  await load('customers', 'publishers', 'sales', 'purchases', 'expenses', 'customer_returns', 'publisher_returns', 'treasury_months', 'pending_items', 'adjustments', 'app_settings');
+  const chain = treasuryChain(); const sel = gridState.dash = gridState.dash || {};
+  const withData = chain.filter(c => c.salesV || c.collect || c.expenses);
+  const cur = sel.month || (withData.length ? withData[withData.length - 1].month : (chain[0] || {}).month);
+  const c = chain.find(x => x.month === cur) || {};
+  const cb = customerBalances('الكل', false), pb = publisherBalances('الكل', false);
+  const alerts = cb.rows.filter(r => r.alert);
+  const top = cb.rows.slice().sort((a, b) => b.net - a.net).slice(0, 10);
+  const mx = Math.max(1, ...chain.map(x => Math.max(x.salesV, x.collect)));
+  $('#page').innerHTML = `<div class="row noprint" style="margin-bottom:12px"><div class="fit"><label class="l">الشهر</label><select id="dm">${chain.map(x => `<option value="${x.month}" ${x.month === cur ? 'selected' : ''}>${monthLabel(x.month)}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="dprint">🖨️ طباعة</button></div></div>
+   <div data-psec data-plabel="مؤشرات الخزنة (مصروفات، كاش، خزنة، بنك، بريد، العجز/الزيادة)"><div class="grid g6"><div class="kpi er"><small>مصروفات الشهر</small><b class="num">${fmt(c.expenses)}</b></div><div class="kpi ac"><small>كاش (خزنة نقدى + الدرج)</small><b class="num">${fmt(c.cash)}</b></div><div class="kpi ok"><small>الخزنة (خزنة ورقى)</small><b class="num">${fmt(c.closing)}</b></div><div class="kpi ac"><small>البنك</small><b class="num">${fmt(c.row && c.row.bank)}</b></div><div class="kpi ac"><small>البريد</small><b class="num">${fmt(c.row && c.row.post)}</b></div><div class="kpi ${Math.abs(c.variance || 0) < 1 ? 'ok' : 'wa'}"><small>الجرد: ${varLabel(c.variance || 0)}</small><b class="num ${cls(c.variance)}">${fmt(Math.abs(c.variance || 0))}</b></div></div></div><div class="sp"></div>
+   <div data-psec data-plabel="المبيعات والتحصيل والأرصدة"><div class="grid g4"><div class="kpi"><small>مبيعات الشهر</small><b class="num">${fmt(c.salesV)}</b></div><div class="kpi"><small>تحصيل الشهر</small><b class="num">${fmt(c.collect)}</b></div><div class="kpi wa"><small>صافي أرصدة العملاء</small><b class="num">${fmt(cb.total.net)}</b></div><div class="kpi wa"><small>صافي أرصدة الناشرين</small><b class="num">${fmt(pb.total.net)}</b></div></div></div><div class="sp"></div>
+   <div class="grid g2"><div class="card" data-psec data-plabel="رسم المبيعات والتحصيل شهرياً"><h3>المبيعات والتحصيل شهرياً</h3><div class="bar">${chain.map(x => `<div class="c"><div class="p"><i style="height:${x.salesV / mx * 100}%;background:var(--ac)" title="${fmt(x.salesV)}"></i><i style="height:${x.collect / mx * 100}%;background:var(--ok)" title="${fmt(x.collect)}"></i></div>${(x.month.split('-')[1])}</div>`).join('')}</div><div class="legend"><span><i style="background:var(--ac)"></i>مبيعات</span><span><i style="background:var(--ok)"></i>تحصيل</span></div></div>
+   <div class="card" data-psec data-plabel="تنبيهات الحد الائتماني"><h3>⚠️ تنبيهات الحد الائتماني <span class="tag ${alerts.length ? 'er' : 'ok'}">${alerts.length}</span></h3>${alerts.length ? `<div class="tw"><table><tbody>${alerts.map(r => `<tr><td>${esc(r.name)}</td><td class="n">${fmt(r.limit)}</td><td><span class="tag er">${r.alert}</span></td></tr>`).join('')}</tbody></table></div>` : '<div class="mut">لا توجد تنبيهات. (حدّد الحد الائتماني للعميل من صفحة «العملاء والناشرون»)</div>'}</div></div>
+   <div class="card" data-psec data-plabel="أعلى 10 أرصدة مستحقة على العملاء"><h3>أعلى 10 أرصدة مستحقة على العملاء</h3><div class="tw"><table><thead><tr><th>العميل</th><th class="n">المسحوبات</th><th class="n">المدفوعات</th><th class="n">الصافي</th><th class="n">نسبة السداد</th></tr></thead><tbody>${top.map(r => `<tr><td>${esc(r.name)}</td><td class="n">${fmt(r.w)}</td><td class="n">${fmt(r.p)}</td><td class="n neg">${fmt(r.net)}</td><td class="n">${pct(r.pct)}</td></tr>`).join('')}</tbody></table></div></div>`;
+  $('#dm').onchange = e => { sel.month = e.target.value; pageDashboard(); };
+  $('#dprint').onclick = () => printSections('لوحة المعلومات');
+}
+
+async function pageBalances(kind) {
+  await load('customers', 'publishers', 'sales', 'purchases', 'customer_returns', 'publisher_returns', 'adjustments', 'app_settings');
+  const gs = gridState['bal' + kind] = gridState['bal' + kind] || { term: 'الكل', hidden: false, q: '', tcols: false };
+  const isC = kind === 'c';
+  const TC = isC ? ['مرتجع الترم الاول', 'الصافى بعد المرتجع (ت1)', 'نسبة المرتجع', 'مرتجع الترم التانى', 'الصافي بعد المرتجع (ت2)', 'النسبه المدفوعة (ت2)'] : ['مرتجع الترم الاول', 'الصافى بعد المرتجع (ت1)', 'النسبة المدفوعة (ت1)', 'مرتجع الترم التانى', 'الصافي بعد المرتجع (ت2)', 'النسبه المدفوعة (ت2)'];
+  const draw = () => {
+    const d = isC ? customerBalances(gs.term, gs.hidden) : publisherBalances(gs.term, gs.hidden);
+    const rows = d.rows.filter(r => !gs.q || norm(r.name).includes(norm(gs.q)));
+    const head0 = isC ? ['اسم العميل', 'المسحوبات', 'المدفوعات', 'تسويات', 'الصافي', 'المرتجع', 'الصافي بعد المرتجع', 'العمولة', 'النسبة المدفوعة', 'الحد الائتماني', 'التنبيه'] : ['اسم الناشر', 'المسحوبات', 'الدفعات', 'تسويات', 'الصافي', 'المرتجع', 'الصافي بعد المرتجع', 'النسبه المدفوعة'];
+    const head = gs.tcols ? [...head0, ...TC] : head0;
+    const line = (r, tot) => {
+      const nm = tot ? 'الاجمالى' : `<a href="#/stmt-${kind}/${r.id}" style="color:var(--ac);text-decoration:none">${esc(r.name)}</a>${r.hidden ? ' <span class="tag">مخفي في Excel</span>' : ''}`;
+      const core = [nm, fmt(r.w), fmt(r.p), `<span class="${cls(r.adj)}">${fmt(r.adj)}</span>`, `<span class="${cls(r.net)}">${fmt(r.net)}</span>`, fmt(r.ret), `<b class="${cls(r.netR)}">${fmt(r.netR)}</b>`];
+      const base = isC ? [...core, fmt(r.com), pct(r.pct), tot ? '' : fmt(r.limit), tot ? '' : (r.alert ? `<span class="tag er">${r.alert}</span>` : '')] : [...core, pct(r.pct)];
+      const tc = [fmt(r.r1), fmt(r.net1), pct(isC ? r.rr1 : r.pct1), fmt(r.r2), fmt(r.net2), pct(r.pct2)];
+      return gs.tcols ? [...base, ...tc] : base;
+    };
+    $('#balbox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد الحسابات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr>${head.map((h, i) => `<th class="${i ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${line(r).map((c, i) => `<td class="${i ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody><tfoot><tr>${line(d.total, true).map((c, i) => `<td class="${i ? 'n' : ''}">${c}</td>`).join('')}</tr></tfoot></table></div>`;
+    gs.rows = rows; gs.head = head; gs.line = line;
+  };
+  $('#page').innerHTML = `<div class="card noprint"><div class="row"><div class="fit"><label class="l">الترم</label><select id="bt">${['الكل', ...TERMS].map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="l">بحث</label><input id="bq" value="${esc(gs.q)}" placeholder="اسم الحساب"></div><div class="fit"><label class="chk" style="display:flex;gap:6px;align-items:center;margin-bottom:9px"><input type="checkbox" id="bh" ${gs.hidden ? 'checked' : ''}> إظهار الحسابات المخفية في Excel</label></div><div class="fit"><label class="chk" style="display:flex;gap:6px;align-items:center;margin-bottom:9px"><input type="checkbox" id="btc" ${gs.tcols ? 'checked' : ''}> أعمدة الترمين (Excel)</label></div><div class="fit"><button class="btn gh" id="bcsv">⬇️ CSV</button> <button class="btn gh" id="bprint">🖨️ طباعة</button></div></div></div><div class="note" style="margin-top:-4px">«تسويات» = عمولات/إضافات مسجلة في تبويب «تسويات الحساب» وتؤثر على الرصيد فقط، ولا تدخل الخزنة. «المرتجع» و«الصافي بعد المرتجع» بجوار كل حساب في نفس الصف.</div><div class="card" id="balbox"></div>`;
+  draw();
+  $('#bt').onchange = e => { gs.term = e.target.value; draw(); }; $('#bq').oninput = e => { gs.q = e.target.value; draw(); }; $('#bh').onchange = e => { gs.hidden = e.target.checked; draw(); }; $('#btc').onchange = e => { gs.tcols = e.target.checked; draw(); };
+  $('#bprint').onclick = () => printDialog(balPrintCfg(isC), { term: gs.term === 'الكل' ? '' : gs.term, hidden: gs.hidden });
+  $('#bcsv').onclick = () => dl(isC ? 'ارصدة_العملاء.csv' : 'ارصدة_الناشرين.csv', toCsv(gs.head, gs.rows.map(r => gs.line(r).map(x => String(x).replace(/<[^>]*>/g, '').replace(/,/g, '')))));
+}
+
+async function pageStatement(kind, id) {
+  await load('customers', 'publishers', 'sales', 'purchases', 'customer_returns', 'publisher_returns', 'adjustments', 'app_settings');
+  const isC = kind === 'c'; const list = isC ? S.data.customers : S.data.publishers;
+  const gs = gridState['st' + kind] = gridState['st' + kind] || { term: 'الكل' }; if (id) gs.id = +id;
+  const draw = () => {
+    const ent = list.find(x => x.id === gs.id);
+    if (!ent) { $('#stbox').innerHTML = '<div class="mut">اختر ' + (isC ? 'عميلاً' : 'ناشراً') + ' لعرض كشف الحساب.</div>'; return; }
+    const { rows, total } = stmtRows(isC, ent, { term: gs.term === 'الكل' ? '' : gs.term }), cols = stmtCols(isC), net = total.credit - total.payments;
+    const cell = (c, r) => c.t === 'm' ? `<td class="n ${c.k === 'run' ? cls(r[c.k]) : ''}">${fmt(r[c.k])}</td>` : c.k === 'kind' && r.kind !== 'حركة' ? `<td><span class="tag ${r.kind === 'مرتجع' ? 'wa' : 'ok'}">${r.kind}</span></td>` : `<td${c.k === 'note' ? ' style="white-space:normal;min-width:160px"' : ''}>${esc(r[c.k])}</td>`;
+    $('#stbox').innerHTML = `<div class="grid g4"><div class="kpi"><small>${isC ? 'عدد الفواتير' : 'عدد الحركات'}</small><b class="num">${rows.filter(r => r.kind === 'حركة').length}</b></div>${isC ? `<div class="kpi"><small>العمولة</small><b class="num">${fmt(total.commission)}</b></div>` : `<div class="kpi"><small>مشتريات نقدى</small><b class="num">${fmt(total.cash_purchases)}</b></div>`}<div class="kpi"><small>المسحوبات (شاملة التسويات)</small><b class="num">${fmt(total.credit)}</b></div><div class="kpi"><small>الدفعات (شاملة التسويات)</small><b class="num">${fmt(total.payments)}</b></div></div><div class="sp"></div>
+     <div class="grid g3"><div class="kpi ${net > 0 ? 'wa' : 'ok'}"><small>الصافى (المسحوبات − الدفعات)</small><b class="num ${cls(net)}">${fmt(net)}</b></div><div class="kpi"><small>المرتجع</small><b class="num">${fmt(total.ret)}</b></div><div class="kpi ${net - total.ret > 0 ? 'wa' : 'ok'}"><small>الصافي بعد خصم المرتجع</small><b class="num ${cls(net - total.ret)}">${fmt(net - total.ret)}</b></div></div><div class="sp"></div>
+     <div class="tw"><table><thead><tr>${cols.map(c => `<th class="${c.t === 'm' ? 'n' : ''}">${c.l}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => cell(c, r)).join('')}</tr>`).join('') || `<tr><td colspan="${cols.length}" class="mut" style="text-align:center;padding:20px">لا يوجد بيانات</td></tr>`}</tbody></table></div>`;
+    gs.cur = { ent, rows, cols };
+  };
+  $('#page').innerHTML = `<div class="card noprint"><div class="row"><div><label class="l">${isC ? 'اسم العميل' : 'اسم الناشر'}</label><input id="sn" list="sn_dl" value="${esc((list.find(x => x.id === gs.id) || {}).name || '')}" placeholder="اكتب أو اختر"><datalist id="sn_dl">${list.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div><div class="fit"><label class="l">الترم</label><select id="st">${['الكل', ...TERMS].map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="scsv">⬇️ CSV</button> <button class="btn gh" id="sprint">🖨️ طباعة</button></div></div></div><div class="card"><h3 id="sth">${esc((list.find(x => x.id === gs.id) || {}).name || '')}</h3><div id="stbox"></div></div>`;
+  draw();
+  $('#sn').onchange = e => { const m = list.find(x => norm(x.name) === norm(e.target.value)); gs.id = m ? m.id : null; $('#sth').textContent = m ? m.name : ''; draw(); };
+  $('#st').onchange = e => { gs.term = e.target.value; draw(); };
+  $('#sprint').onclick = () => { const en = list.find(x => x.id === gs.id); if (!en) return toast('اختر ' + (isC ? 'العميل' : 'الناشر') + ' أولاً', 1); printDialog(stmtPrintCfg(isC, en), { term: gs.term === 'الكل' ? '' : gs.term }); };
+  $('#scsv').onclick = () => { if (!gs.cur) return; const { rows, cols } = gs.cur; dl('كشف_حساب.csv', toCsv(cols.map(c => c.l), rows.map(r => cols.map(c => r[c.k])))); };
+}
+
+function miniModal(title, html, onSave) {
+  const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="m" style="max-width:460px"><h3>${esc(title)}</h3>${html}<div class="sp"></div><div class="row"><button class="btn fit" id="mmS">💾 حفظ</button><button class="btn gh fit" id="mmC">إلغاء</button></div></div>`;
+  document.body.appendChild(m); $('#mmC', m).onclick = () => m.remove();
+  $('#mmS', m).onclick = async () => { try { await onSave(m); m.remove(); } catch (err) { toast(err.message, 1); } };
+}
+/** المعلق: تعديل البند، وسداد كلي أو جزئي (الجزئي يُغلق البند ويفتح بند بالمتبقي من هذا الشهر) */
+function pendActions(cur, reload) {
+  const item = id => S.data.pending_items.find(x => x.id === id);
+  $$('[data-pe]').forEach(b => b.onclick = () => { const p = item(+b.dataset.pe); miniModal('تعديل بند معلق', `<label class="l">البيان</label><input id="pe_l" value="${esc(p.label)}"><div class="sp"></div><label class="l">المبلغ</label><input id="pe_a" class="num money" inputmode="decimal" value="${mv(p.amount)}">`,
+    async m => { const a = r2(num($('#pe_a', m).value)); if (!(a > 0)) throw new Error('أدخل مبلغاً صحيحاً'); const { error } = await sb.from('pending_items').update({ label: $('#pe_l', m).value.trim() || p.label, amount: a }).eq('id', p.id); if (error) throw error; reload('pending_items'); toast('تم التعديل ✔'); }); });
+  $$('[data-pp]').forEach(b => b.onclick = () => { const p = item(+b.dataset.pp), rem = num(p.amount);
+    miniModal('تسجيل سداد من المعلق', `<div class="mut">المتبقي الحالي: <b class="num">${fmt(rem)}</b> — اكتب المبلغ الذي سُدِّد الآن (إن كان أقل من المتبقي يبقى الفرق معلقاً)</div><div class="sp"></div><label class="l">المبلغ المسدَّد</label><input id="pp_a" class="num money" inputmode="decimal" value="${mv(rem)}"><div class="sp"></div><label class="l">طريقة السداد</label>${pmSel('pp_m')}`,
+    async m => {
+      const paid = r2(num($('#pp_a', m).value)), meth = $('#pp_m', m).value; if (!(paid > 0)) throw new Error('أدخل مبلغاً صحيحاً'); if (paid > rem + 0.005) throw new Error('المبلغ أكبر من المتبقي');
+      const left = r2(rem - paid);
+      let r = await sb.from('pending_items').update({ settled: true, settled_month: cur }).eq('id', p.id); if (r.error) throw r.error;
+      if (left > 0.005) { r = await sb.from('pending_items').insert({ month: cur, label: p.label.replace(/ \(متبقي\)$/, '') + ' (متبقي)', kind: p.kind, amount: left, carry: true, settled: false, sale_id: p.sale_id || null }); if (r.error) throw r.error; }
+      else if (p.sale_id) { r = await sb.from('sales').update({ is_pending: false, pay_method: meth }).eq('id', p.sale_id); if (r.error) throw r.error; invalidate('sales'); await load('sales'); }
+      reload('pending_items'); toast(left > 0.005 ? 'تم تسجيل سداد جزئي ✔ والمتبقي ' + fmt(left) : 'تم السداد بالكامل ✔');
+    }); });
+}
+async function pageTreasury() {
+  await load('sales', 'purchases', 'expenses', 'treasury_months', 'pending_items');
+  const gs = gridState.tr = gridState.tr || {};
+  const reload = async (...k) => { invalidate(...k); await load(...k); draw(); };
+  async function addMonth() {
+    const last = S.data.treasury_months.map(m => m.month).sort().slice(-1)[0]; let [y, m] = (last || today().slice(0, 7)).split('-').map(Number); if (last) { m++; if (m > 12) { m = 1; y++; } }
+    const k = prompt('الشهر الجديد بصيغة YYYY-MM', `${y}-${String(m).padStart(2, '0')}`); if (!k) return; if (!/^\d{4}-\d{2}$/.test(k)) return toast('صيغة غير صحيحة', 1);
+    const { error } = await sb.from('treasury_months').insert({ month: k }); if (error) return toast(error.message, 1); gs.month = k; reload('treasury_months');
+  }
+  const draw = () => {
+    const chain = treasuryChain(); if (!chain.length) { $('#page').innerHTML = '<div class="card">لا توجد أشهر بعد. <button class="btn" id="addM">+ إضافة شهر</button></div>'; $('#addM').onclick = addMonth; return; }
+    const cur = gs.month && chain.find(x => x.month === gs.month) ? gs.month : (chain.filter(c => c.salesV || c.expenses).slice(-1)[0] || chain[0]).month; gs.month = cur;
+    const idx = chain.findIndex(x => x.month === cur), c = chain[idx], prevClosing = idx > 0 ? chain[idx - 1].closing : 0;
+    const manual = c.row.opening_override != null, autoOpen = idx > 0 ? prevClosing : 0;
+    const items = S.data.pending_items.filter(p => pendActive(p, cur)), settled = S.data.pending_items.filter(p => p.settled && p.settled_month === cur);
+    const exps = S.data.expenses.filter(x => x.period === cur), byCat = {}; exps.forEach(x => byCat[x.category] = (byCat[x.category] || 0) + num(x.amount));
+    const kinds = ['فاتورة نقدى لم تسدد', 'سلفة', 'أخرى'];
+    $('#page').innerHTML = `<div class="row noprint" style="margin-bottom:12px"><div class="fit"><label class="l">الشهر</label><select id="tm">${chain.map(x => `<option value="${x.month}" ${x.month === cur ? 'selected' : ''}>${monthLabel(x.month)}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="addM">+ إضافة شهر</button> <button class="btn gh" id="tprint">🖨️ طباعة</button></div></div>
+     <div class="grid g2"><div class="card" data-psec data-plabel="اليومية (الوارد)"><h3>اليومية (الوارد)</h3><div class="eq"><span>خزينة قديمة ${manual ? '<span class="tag wa">إدخال يدوي</span>' : '<span class="tag ok">مُرحَّلة تلقائياً</span>'}</span>
+        <span style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span style="display:flex;gap:6px;align-items:center"><input id="op" class="num money" inputmode="decimal" style="width:150px" disabled value="${mv(c.opening)}"><button class="btn gh sm noprint" id="opLock" title="فتح للتعديل اليدوي">🔒</button></span>
+        <span id="opAct" class="noprint" style="display:none;gap:6px"><button class="btn sm ok" id="opSave">حفظ</button> <button class="btn gh sm" id="opAuto">↺ ترحيل تلقائي (${fmt(autoOpen)})</button></span></span>
+        <span>مبيعات</span><b class="num">${fmt(c.salesV)}</b><span>تحصيل</span><b class="num">${fmt(c.collect)}</b><span class="t">الاجمالى</span><b class="num t">${fmt(c.inTotal)}</b></div></div>
+     <div class="card" data-psec data-plabel="اجمالى مصروفات (المنصرف)"><h3>اجمالى مصروفات (المنصرف)</h3><div class="eq"><span>مصروفات</span><b class="num">${fmt(c.expenses)}</b><span>عمولة</span><b class="num">${fmt(c.commission)}</b><span>مبيعات اجل</span><b class="num">${fmt(c.creditSales)}</b><span>دفعات ناشرين</span><b class="num">${fmt(c.pubPay)}</b><span>مشتريات نقدى</span><b class="num">${fmt(c.cashPurch)}</b><span class="t">الاجمالى (منصرف)</span><b class="num t">${fmt(c.outTotal)}</b></div></div></div>
+     <div class="grid g3" data-psec data-plabel="الخزينة والمعلق والفرق"><div class="kpi ok"><small>خزينة جديدة (خزنة ورقى)</small><b class="num">${fmt(c.closing)}</b></div><div class="kpi wa"><small>المعلق (يُحتسب كمبلغ موجود)</small><b class="num">${fmt(c.pending)}</b></div><div class="kpi ${Math.abs(c.variance) < 1 ? 'ok' : 'er'}"><small>${varLabel(c.variance)}</small><b class="num ${cls(c.variance)}">${fmt(Math.abs(c.variance))}</b></div></div><div class="sp"></div>
+     <div class="grid g2"><div class="card" data-psec data-plabel="الجرد الفعلي والفرق"><h3>الجرد الفعلي (خزنة نقدى / الدرج / البريد / البنك)</h3><div class="grid g2">${[['cash_box', 'خزنة نقدى'], ['drawer', 'الدرج'], ['post', 'البريد'], ['bank', 'البنك']].map(([k, l]) => `<div><label class="l">${l}</label><input class="num money" id="h_${k}" inputmode="decimal" value="${mv(num(c.row[k]))}"></div>`).join('')}</div><div class="sp"></div><button class="btn noprint" id="hSave">💾 حفظ الجرد</button>
+       <div class="sp"></div><div class="eq"><span>اجمالى الجرد الفعلي</span><b class="num">${fmt(c.holdings)}</b><span>+ المعلق</span><b class="num">${fmt(c.pending)}</b><span>= الجرد الفعلي + المعلق</span><b class="num">${fmt(c.actual)}</b><span>الخزينة الدفترية</span><b class="num">${fmt(c.closing)}</b><span class="t">${varLabel(c.variance)} (الفعلي + المعلق − الدفترى)</span><b class="num t ${cls(c.variance)}">${fmt(c.variance)}</b></div></div>
+     <div class="card" data-psec data-plabel="المعلق (فواتير نقدى لم تسدد / سلف)"><h3>المعلق <span class="mut" style="font-size:12px;font-weight:500">(فواتير نقدى لم تسدد بعد أو سلف — تُحتسب كمبلغ موجود ويقلّ بها العجز)</span></h3><div class="tw" style="max-height:260px"><table><tbody>${items.map(p => `<tr><td>${esc(p.label)} <span class="tag">${esc(p.kind || 'أخرى')}</span>${p.month < cur ? ` <span class="tag wa">من ${monthLabel(p.month)}</span>` : ''}</td><td class="n">${fmt(p.amount)}</td><td class="noprint"><button class="btn ok sm" data-pp="${p.id}" title="تسجيل سداد (كلي أو جزئي)">💵 سداد</button> <button class="btn gh sm" data-pe="${p.id}" title="تعديل">✏️</button> <button class="btn gh sm" data-pd="${p.id}">🗑️</button></td></tr>`).join('') || '<tr><td class="mut">لا توجد بنود معلقة</td></tr>'}${settled.map(p => `<tr class="mut"><td><s>${esc(p.label)}</s> <span class="tag ok">سُدِّد هذا الشهر</span></td><td class="n"><s>${fmt(p.amount)}</s></td><td class="noprint"><button class="btn gh sm" data-pu="${p.id}">↩ تراجع</button></td></tr>`).join('')}</tbody><tfoot><tr><td>إجمالى المعلق</td><td class="n">${fmt(c.pending)}</td><td class="noprint"></td></tr></tfoot></table></div><div class="sp"></div>
+       <div class="noprint"><div class="row"><div><label class="l">البيان</label><input id="pl"></div><div class="fit"><label class="l">النوع</label><select id="pk">${kinds.map(k => `<option>${k}</option>`).join('')}</select></div><div><label class="l">المبلغ</label><input class="num money" id="pa" inputmode="decimal"></div><div class="fit"><button class="btn" id="pAdd">+ إضافة</button></div></div><label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:13px"><input type="checkbox" id="pc" checked> يُرحَّل للأشهر التالية حتى يتم سداده</label></div></div></div>
+     <div class="card" data-psec data-plabel="حركة الشهر حسب طريقة الدفع (نقدى / بنك / بريد)"><h3>حركة الشهر حسب طريقة الدفع <span class="mut" style="font-size:12px;font-weight:500">(للاطلاع فقط — لا تغيّر حسابات الخزنة)</span></h3><div class="tw" style="max-height:none"><table><thead><tr><th>الطريقة</th><th class="n">وارد (مبيعات نقدى + تحصيل العملاء)</th><th class="n">منصرف (دفعات ناشرين + مشتريات نقدى + مصروفات)</th><th class="n">الصافي</th></tr></thead><tbody>${[...PMS, 'معلق'].map(x => `<tr><td>${x === 'معلق' ? 'معلق (فواتير نقدى لم تُسدد بعد)' : x}</td><td class="n">${fmt(c.bm[x].in)}</td><td class="n">${fmt(c.bm[x].out)}</td><td class="n ${cls(c.bm[x].in - c.bm[x].out)}">${fmt(c.bm[x].in - c.bm[x].out)}</td></tr>`).join('')}</tbody><tfoot><tr><td>صافي حركة الشهر (= الخزينة الجديدة − القديمة)</td><td class="n">${fmt(sum(Object.values(c.bm), x => x.in))}</td><td class="n">${fmt(sum(Object.values(c.bm), x => x.out))}</td><td class="n">${fmt(c.closing - c.opening)}</td></tr></tfoot></table></div></div>
+     <div class="card" data-psec data-plabel="مصروفات الشهر حسب البند"><h3>مصروفات الشهر حسب البند <a href="#/expenses" class="noprint" style="font-size:13px;font-weight:500;color:var(--ac)">(فتح المصروفات)</a></h3><div class="tw" style="max-height:260px"><table><tbody>${Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${fmt(v)}</td></tr>`).join('') || '<tr><td class="mut">لا توجد مصروفات</td></tr>'}</tbody></table></div></div>`;
+    $('#tm').onchange = e => { gs.month = e.target.value; draw(); };
+    $('#addM').onclick = addMonth; $('#tprint').onclick = () => printSections('الخزنة');
+    // قفل الخزينة القديمة
+    $('#opLock').onclick = () => { const i = $('#op'), open = i.disabled; i.disabled = !open; $('#opLock').textContent = open ? '🔓' : '🔒'; $('#opAct').style.display = open ? 'flex' : 'none'; if (open) { i.focus(); i.select(); } else i.value = c.opening; };
+    $('#opSave').onclick = async () => { const v = r2(num($('#op').value)); const { error } = await sb.from('treasury_months').update({ opening_override: v }).eq('month', cur); if (error) return toast(error.message, 1); toast('تم تثبيت الخزينة القديمة يدوياً ✔'); reload('treasury_months'); };
+    $('#opAuto').onclick = async () => { const { error } = await sb.from('treasury_months').update({ opening_override: null }).eq('month', cur); if (error) return toast(error.message, 1); toast('عادت للترحيل التلقائي ✔'); reload('treasury_months'); };
+    $('#hSave').onclick = async () => { const rec = { cash_box: num($('#h_cash_box').value), drawer: num($('#h_drawer').value), post: num($('#h_post').value), bank: num($('#h_bank').value) }; const { error } = await sb.from('treasury_months').update(rec).eq('month', cur); if (error) return toast(error.message, 1); toast('تم حفظ الجرد ✔'); reload('treasury_months'); };
+    $('#pAdd').onclick = async () => { if (!$('#pl').value.trim()) return toast('اكتب البيان', 1); const { error } = await sb.from('pending_items').insert({ month: cur, label: $('#pl').value.trim(), kind: $('#pk').value, amount: r2(num($('#pa').value)), carry: $('#pc').checked, settled: false, settled_month: null }); if (error) return toast(error.message, 1); reload('pending_items'); };
+    const upd = (sel, rec) => $$(sel).forEach(b => b.onclick = async () => { const id = +Object.values(b.dataset)[0]; const { error } = rec ? await sb.from('pending_items').update(rec).eq('id', id) : await sb.from('pending_items').delete().eq('id', id); if (error) return toast(error.message, 1); reload('pending_items'); });
+    upd('[data-ps]', { settled: true, settled_month: cur }); upd('[data-pu]', { settled: false, settled_month: null }); upd('[data-pd]', null);
+    pendActions(cur, reload);
+    if (isViewer()) { $$('#opLock,#hSave,#pAdd,#addM,[data-pp],[data-pe],[data-pu],[data-pd]').forEach(b => b.remove()); const pl = $('#pl'); if (pl) pl.closest('.noprint').remove(); $$('#page input').forEach(x => x.disabled = true); }
+  };
+  draw();
+}
+
+async function pagePayments(kind) {
+  const isC = kind === 'c', tbl = isC ? 'sales' : 'purchases', refT = isC ? 'customers' : 'publishers', rk = isC ? 'customer_id' : 'publisher_id', dk = isC ? 'sale_date' : 'purchase_date';
+  await load('customers', 'publishers', 'app_settings', tbl);
+  const gs = gridState['pay' + kind] = gridState['pay' + kind] || { q: '', from: '', to: '', term: '', tab: 'det', limit: 200 }, admin = isAdmin(), st = settings();
+  const nameOf = r => (S.data[refT].find(x => x.id === r[rk]) || {}).name || '';
+  const filtered = () => S.data[tbl].filter(r => num(r.payments) > 0 && dOk(r[dk], gs) && (!gs.term || r.term === gs.term) && (!gs.pm || (r.pay_method || 'نقدى') === gs.pm) && (!gs.q || norm(nameOf(r) + ' ' + (r.invoice_no || '')).includes(norm(gs.q))));
+  const summary = rows => { const m = new Map(); rows.forEach(r => { const a = m.get(r[rk]) || { name: nameOf(r), count: 0, total: 0, last: '', 'نقدى': 0, 'بنك': 0, 'بريد': 0 }; a.count++; a.total += num(r.payments); a[PMS.includes(r.pay_method) ? r.pay_method : 'نقدى'] += num(r.payments); if (r[dk] > a.last) a.last = r[dk]; m.set(r[rk], a); }); return [...m.values()].sort((a, b) => b.total - a.total); };
+  $('#page').innerHTML = `<div class="card noprint wr"><h3>➕ تسجيل دفعة ${isC ? 'من عميل' : 'لناشر'}</h3><div class="grid g4" id="pf">
+     <div><label class="l">التاريخ</label><input type="date" id="pf_d" value="${today()}"></div>
+     <div><label class="l">${isC ? 'اسم العميل' : 'اسم الناشر'}</label><input id="pf_n" list="pf_dl" data-ref="${refT}" autocomplete="off" placeholder="اكتب أو اختر — الجديد يُضاف تلقائياً"><datalist id="pf_dl">${S.data[refT].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>
+     <div><label class="l">المبلغ</label><input class="num money" id="pf_a" inputmode="decimal" placeholder="0"></div>
+     ${isC ? '<div><label class="l">رقم الإيصال (اختياري — يُكتب التاريخ تلقائياً)</label><input id="pf_r"></div>' : ''}
+     <div><label class="l">طريقة الدفع</label>${pmSel('pf_m')}</div>
+     <div><label class="l">الترم</label><select id="pf_t">${TERMS.map(t => `<option ${(st.current_term || 'الاول') === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div></div><div class="sp"></div><button class="btn" id="pfAdd">💾 حفظ الدفعة</button></div>
+   <div class="card"><div class="tabs noprint"><button data-tab="det" class="${gs.tab === 'det' ? 'on' : ''}">التفصيلي</button><button data-tab="sum" class="${gs.tab === 'sum' ? 'on' : ''}">ملخص لكل ${isC ? 'عميل' : 'ناشر'}</button></div>
+     <div class="row noprint"><div><label class="l">بحث</label><input id="pq" value="${esc(gs.q)}" placeholder="الاسم${isC ? ' أو رقم الإيصال' : ''}"></div><div class="fit"><label class="l">من</label><input type="date" id="pfr" value="${esc(gs.from)}"></div><div class="fit"><label class="l">إلى</label><input type="date" id="pto" value="${esc(gs.to)}"></div><div class="fit"><label class="l">الترم</label><select id="ptm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="fit"><label class="l">طريقة الدفع</label><select id="ppm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="pcsv">⬇️ CSV</button> <button class="btn gh" id="pprint">🖨️ طباعة</button></div></div><div class="sp"></div><div id="paybox"></div></div>`;
+  const draw = () => {
+    const rows = filtered().sort((a, b) => String(b[dk]).localeCompare(String(a[dk])) || b.id - a.id), total = sum(rows, r => r.payments);
+    const canEdit = r => canWrite() && (admin || (r.created_by === me.id && Date.now() - new Date(r.created_at).getTime() < 864e5));
+    if (gs.tab === 'sum') { const sm = summary(rows); $('#paybox').innerHTML = `<div class="tw"><table><thead><tr><th>#</th><th>${isC ? 'العميل' : 'الناشر'}</th><th class="n">عدد الدفعات</th><th class="n">إجمالي المدفوع</th><th class="n">نقدى</th><th class="n">بنك</th><th class="n">بريد</th><th>آخر دفعة</th></tr></thead><tbody>${sm.map((a, i) => `<tr><td class="mut num">${i + 1}</td><td>${esc(a.name)}</td><td class="n">${a.count}</td><td class="n">${fmt(a.total)}</td><td class="n">${fmt(a['نقدى'])}</td><td class="n">${fmt(a['بنك'])}</td><td class="n">${fmt(a['بريد'])}</td><td class="num">${a.last}</td></tr>`).join('') || '<tr><td colspan="8" class="mut" style="text-align:center;padding:20px">لا توجد دفعات</td></tr>'}</tbody><tfoot><tr><td></td><td>الإجمالي</td><td class="n">${rows.length}</td><td class="n">${fmt(total)}</td>${PMS.map(x => `<td class="n">${fmt(sum(sm, a => a[x]))}</td>`).join('')}<td></td></tr></tfoot></table></div>`; return; }
+    const shown = rows.slice(0, gs.limit);
+    $('#paybox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد الدفعات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr><th>#</th><th>التاريخ</th>${isC ? '<th>رقم الإيصال</th>' : ''}<th>${isC ? 'العميل' : 'الناشر'}</th><th class="n">المبلغ</th><th>الترم</th><th>طريقة الدفع</th><th class="noprint"></th></tr></thead><tbody>${shown.map((r, i) => `<tr><td class="mut num">${i + 1}</td><td class="num">${r[dk]}</td>${isC ? `<td>${esc(r.invoice_no)}</td>` : ''}<td>${esc(nameOf(r))}</td><td class="n">${fmt(r.payments)}</td><td>${r.term}</td><td><span class="pill pm-${esc(r.pay_method || 'نقدى')}">${esc(r.pay_method || 'نقدى')}</span></td><td class="noprint">${canEdit(r) ? `<button class="btn gh sm" data-ed="${r.id}">✏️</button> <button class="btn gh sm" data-del="${r.id}">🗑️</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="8" class="mut" style="text-align:center;padding:20px">لا توجد دفعات</td></tr>`}</tbody><tfoot><tr><td></td><td>الإجمالي</td>${isC ? '<td></td>' : ''}<td></td><td class="n">${fmt(total)}</td><td></td><td></td><td class="noprint"></td></tr></tfoot></table></div>${rows.length > shown.length ? '<div style="text-align:center;margin-top:10px"><button class="btn gh" id="pmore">عرض المزيد</button></div>' : ''}`;
+    $('#pmore') && ($('#pmore').onclick = () => { gs.limit += 400; draw(); });
+    $$('[data-del]', $('#paybox')).forEach(b => b.onclick = async () => { if (!confirm('حذف هذه الدفعة نهائياً؟')) return; const { error } = await sb.from(tbl).delete().eq('id', +b.dataset.del); if (error) return toast(error.message, 1); invalidate(tbl); await load(tbl); draw(); });
+    $$('[data-ed]', $('#paybox')).forEach(b => b.onclick = () => editModal(tbl, S.data[tbl].find(x => x.id === +b.dataset.ed), () => { invalidate(tbl); load(tbl).then(draw); }));
+  };
+  draw();
+  $('#pfAdd').onclick = async () => {
+    const btn = $('#pfAdd'); btn.disabled = true;
+    try {
+      const amt = r2(num($('#pf_a').value)); if (!(amt > 0)) throw new Error('أدخل مبلغاً صحيحاً'); if (!$('#pf_d').value) throw new Error('التاريخ مطلوب');
+      const id = await resolveRef(tbl, $('#pf_n').value);
+      const rec = isC ? { invoice_no: $('#pf_r').value.trim() || $('#pf_d').value, inv_type: 'اجل', is_pending: false, customer_id: id, invoice_value: 0, commission: 0, credit: 0, payments: amt, pay_method: $('#pf_m').value, sale_date: $('#pf_d').value, term: $('#pf_t').value }
+        : { publisher_id: id, cash_purchases: 0, credit_purchases: 0, payments: amt, pay_method: $('#pf_m').value, purchase_date: $('#pf_d').value, term: $('#pf_t').value };
+      const { data, error } = await sb.from(tbl).insert(rec).select().single(); if (error) throw error;
+      S.data[tbl].push(data); await load('customers', 'publishers'); toast('تم حفظ الدفعة ✔'); $('#pf_a').value = ''; if ($('#pf_r')) $('#pf_r').value = ''; $('#pf_n').value = ''; $('#pf_n').focus(); draw();
+    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+  };
+  $('#pf').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('#pfAdd').click(); } });
+  const bind = (id, k) => { const x = $('#' + id); x.oninput = x.onchange = () => { gs[k] = x.value; gs.limit = 200; draw(); }; };
+  bind('pq', 'q'); bind('ppm', 'pm'); bind('pfr', 'from'); bind('pto', 'to'); bind('ptm', 'term');
+  $$('.tabs button').forEach(b => b.onclick = () => { gs.tab = b.dataset.tab; pagePayments(kind); });
+  const detCfg = () => ({ key: 'pay' + kind, title: isC ? 'دفعات العملاء' : 'دفعات الناشرين', filters: { date: true, invoice: isC, term: true, ref: { label: isC ? 'العميل' : 'الناشر', list: S.data[refT] }, order: true },
+    cols: [{ k: 'date', l: 'التاريخ', t: 't' }, ...(isC ? [{ k: 'ref', l: 'رقم الإيصال', t: 't' }] : []), { k: 'name', l: isC ? 'العميل' : 'الناشر', t: 't' }, { k: 'amount', l: 'المبلغ', t: 'm', sum: true }, { k: 'pm', l: 'طريقة الدفع', t: 't' }, { k: 'term', l: 'الترم', t: 't' }],
+    build(o) { let r = S.data[tbl].filter(x => num(x.payments) > 0 && dOk(x[dk], o) && (!o.term || x.term === o.term) && (!o.ref || norm(nameOf(x)).includes(norm(o.ref))) && (!isC || invOk(x.invoice_no, o))).sort((a, b) => String(a[dk]).localeCompare(String(b[dk])) || a.id - b.id); if (o.order === 'desc') r.reverse(); return { rows: r.map(x => ({ date: x[dk], ref: x.invoice_no, name: nameOf(x), amount: x.payments, pm: x.pay_method || 'نقدى', term: x.term })) }; } });
+  const sumCfg = () => ({ key: 'paysum' + kind, title: 'ملخص ' + (isC ? 'دفعات العملاء' : 'دفعات الناشرين'), filters: { date: true, term: true },
+    cols: [{ k: 'name', l: isC ? 'العميل' : 'الناشر', t: 't' }, { k: 'count', l: 'عدد الدفعات', t: 't', sum: true }, { k: 'total', l: 'إجمالي المدفوع', t: 'm', sum: true }, { k: 'نقدى', l: 'نقدى', t: 'm', sum: true }, { k: 'بنك', l: 'بنك', t: 'm', sum: true }, { k: 'بريد', l: 'بريد', t: 'm', sum: true }, { k: 'last', l: 'آخر دفعة', t: 't' }],
+    build(o) { return { rows: summary(S.data[tbl].filter(x => num(x.payments) > 0 && dOk(x[dk], o) && (!o.term || x.term === o.term))) }; } });
+  $('#pprint').onclick = () => printDialog(gs.tab === 'sum' ? sumCfg() : detCfg(), { from: gs.from, to: gs.to, term: gs.term, ref: '' });
+  $('#pcsv').onclick = () => { const rows = filtered().sort((a, b) => String(a[dk]).localeCompare(String(b[dk]))); dl(isC ? 'دفعات_العملاء.csv' : 'دفعات_الناشرين.csv', toCsv(isC ? ['التاريخ', 'رقم الإيصال', 'العميل', 'المبلغ', 'طريقة الدفع', 'الترم'] : ['التاريخ', 'الناشر', 'المبلغ', 'طريقة الدفع', 'الترم'], rows.map(r => isC ? [r[dk], r.invoice_no, nameOf(r), r.payments, r.pay_method || 'نقدى', r.term] : [r[dk], nameOf(r), r.payments, r.pay_method || 'نقدى', r.term]))); };
+}
+
+async function pageMasters() {
+  await load('customers', 'publishers', 'sales', 'purchases');
+  const gs = gridState.ms = gridState.ms || { tab: 'c', q: '' };
+  const draw = () => {
+    const isC = gs.tab === 'c', list = (isC ? S.data.customers : S.data.publishers).filter(x => !gs.q || norm(x.name).includes(norm(gs.q)));
+    $('#msbox').innerHTML = `<div class="tw"><table><thead><tr><th>الاسم</th>${isC ? '<th>النوع</th><th class="n">الحد الائتماني</th>' : ''}<th>يظهر في الأرصدة</th><th></th></tr></thead><tbody>${list.map(x => `<tr data-id="${x.id}"><td><input value="${esc(x.name)}" data-f="name"></td>${isC ? `<td><select data-f="type"><option ${x.type === 'اجل' ? 'selected' : ''}>اجل</option><option ${x.type === 'نقدى' ? 'selected' : ''}>نقدى</option></select></td><td><input class="num" data-f="credit_limit" value="${x.credit_limit == null ? '' : x.credit_limit}" placeholder="—"></td>` : ''}<td><input type="checkbox" data-f="show_in_balances" ${x.show_in_balances ? 'checked' : ''}></td><td><button class="btn sm" data-sv>💾</button> <button class="btn gh sm" data-dl>🗑️</button></td></tr>`).join('')}</tbody></table></div>`;
+    $$('[data-sv]').forEach(b => b.onclick = async () => { const tr = b.closest('tr'), rec = {}; $$('[data-f]', tr).forEach(i => rec[i.dataset.f] = i.type === 'checkbox' ? i.checked : i.value.trim()); if (isC) rec.credit_limit = rec.credit_limit === '' ? null : num(rec.credit_limit); const { error } = await sb.from(isC ? 'customers' : 'publishers').update(rec).eq('id', +tr.dataset.id); if (error) return toast(error.message, 1); invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); toast('تم الحفظ ✔'); });
+    $$('[data-dl]').forEach(b => b.onclick = async () => { const id = +b.closest('tr').dataset.id; if (!confirm('حذف هذا الحساب؟ لا يمكن حذف حساب له حركات.')) return; const { error } = await sb.from(isC ? 'customers' : 'publishers').delete().eq('id', id); if (error) return toast('لا يمكن الحذف: الحساب مرتبط بحركات', 1); invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); draw(); });
+  };
+  $('#page').innerHTML = `<div class="card"><div class="tabs"><button data-t="c" class="${gs.tab === 'c' ? 'on' : ''}">العملاء</button><button data-t="p" class="${gs.tab === 'p' ? 'on' : ''}">الناشرون</button></div><div class="row"><div><label class="l">بحث</label><input id="mq" value="${esc(gs.q)}"></div><div class="wr"><label class="l">إضافة جديد</label><input id="mn" placeholder="الاسم"></div><div class="fit"><button class="btn" id="mA">+ إضافة</button> <button class="btn gh" id="mP">🖨️ طباعة</button></div></div><div class="sp"></div><div id="msbox"></div></div>`;
+  $('#mP').onclick = () => printDialog(mastersPrintCfg(gs.tab === 'c'));
+  draw();
+  $$('.tabs button').forEach(b => b.onclick = () => { gs.tab = b.dataset.t; pageMasters(); });
+  $('#mq').oninput = e => { gs.q = e.target.value; draw(); };
+  $('#mA').onclick = async () => { const n = $('#mn').value.trim(); if (!n) return; const isC = gs.tab === 'c'; const { error } = await sb.from(isC ? 'customers' : 'publishers').insert(isC ? { name: n, type: 'اجل' } : { name: n }); if (error) return toast(error.message, 1); invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); $('#mn').value = ''; draw(); toast('تمت الإضافة ✔'); };
+}
+
+async function pageUsers() {
+  const { data, error } = await sb.from('profiles').select('*').order('created_at'); if (error) return toast(error.message, 1);
+  $('#page').innerHTML = `<div class="note">لإضافة موظف جديد: افتح لوحة Supabase ▸ <b>Authentication ▸ Users ▸ Add user</b> وأنشئ له بريداً وكلمة مرور، ثم حدّث هذه الصفحة وسيظهر هنا بدور «موظف». لإنشاء حساب <b>قراءة فقط</b> أنشئ المستخدم بنفس الطريقة ثم غيّر دوره هنا إلى «قراءة فقط».</div><div class="card"><div class="tw"><table><thead><tr><th>البريد</th><th>الاسم</th><th>الدور</th><th>نشط</th><th></th></tr></thead><tbody>${data.map(u => `<tr data-id="${u.id}"><td>${esc(u.email)}</td><td><input data-f="full_name" value="${esc(u.full_name)}"></td><td><select data-f="role"><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>مدير / مالك</option><option value="staff" ${u.role === 'staff' ? 'selected' : ''}>موظف إدخال</option><option value="viewer" ${u.role === 'viewer' ? 'selected' : ''}>قراءة فقط (يرى كل شيء ولا يعدّل)</option></select></td><td><input type="checkbox" data-f="active" ${u.active ? 'checked' : ''}></td><td><button class="btn sm" data-sv>💾 حفظ</button></td></tr>`).join('')}</tbody></table></div></div>`;
+  $$('[data-sv]').forEach(b => b.onclick = async () => { const tr = b.closest('tr'), id = tr.dataset.id, rec = {}; $$('[data-f]', tr).forEach(i => rec[i.dataset.f] = i.type === 'checkbox' ? i.checked : i.value); if (id === me.id && (rec.role !== 'admin' || !rec.active)) return toast('لا يمكنك إزالة صلاحيات حسابك الحالي', 1); const { error } = await sb.from('profiles').update(rec).eq('id', id); if (error) return toast(error.message, 1); toast('تم الحفظ ✔'); });
+}
+
+async function pageSettings() {
+  invalidate('app_settings'); await load('app_settings', 'sales', 'customers', 'publishers', 'purchases', 'expenses');
+  const st = settings();
+  $('#page').innerHTML = `<div class="grid g2"><div class="card"><h3>الإعدادات العامة</h3><div class="grid g2"><div><label class="l">الترم الحالي (افتراضي الإدخال)</label><select id="s1">${TERMS.map(t => `<option ${st.current_term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="l">نسبة تنبيه الحد الائتماني</label><input class="num" id="s2" value="${esc(st.credit_alert_ratio || '0.9')}"></div><div style="grid-column:1/-1"><label class="l">أساس التنبيه</label><select id="s3"><option value="payments" ${st.credit_alert_basis !== 'balance' ? 'selected' : ''}>المدفوعات ≥ نسبة × الحد (كما في Excel بالضبط)</option><option value="balance" ${st.credit_alert_basis === 'balance' ? 'selected' : ''}>الصافي المستحق ≥ نسبة × الحد (مقترح)</option></select></div></div><div class="sp"></div><button class="btn" id="sS">💾 حفظ</button></div>
+   <div class="card"><h3>نسخة احتياطية</h3><p class="mut">تنزيل كل البيانات كملف JSON.</p><button class="btn gh" id="bk">⬇️ تنزيل نسخة احتياطية</button></div></div>
+   <div class="card"><h3>🎨 المظهر وهوية المكان والطباعة</h3><div class="grid g2"><div><label class="l">اسم المكان (يظهر في القائمة والطباعة)</label><input id="s_name" value="${esc(st.store_name || '')}" placeholder="First - Bookstore"></div><div><label class="l">المظهر (ألوان مريحة للعين)</label><select id="s_theme">${THEMES.map(t => `<option value="${t}" ${document.documentElement.dataset.theme === t ? 'selected' : ''}>${TN[t]}</option>`).join('')}</select></div>
+   <div><label class="l">اللوجو</label><div style="display:flex;gap:10px;align-items:center"><img id="logoPrev" src="${esc(st.logo || '')}" style="height:48px;max-width:120px;object-fit:contain;${st.logo ? '' : 'display:none'}"><input type="file" id="logoF" accept="image/*"><button class="btn gh sm" id="logoX">إزالة</button></div></div>
+   <div><label class="l">صورة الطابع / الختم (اختياري)</label><div style="display:flex;gap:10px;align-items:center"><img id="stampPrev" src="${esc(st.stamp_img || '')}" style="height:48px;max-width:120px;object-fit:contain;${st.stamp_img ? '' : 'display:none'}"><input type="file" id="stampF" accept="image/*"><button class="btn gh sm" id="stampX">إزالة</button></div></div>
+   <div><label class="l">نص الطابع (يظهر إن لم تُرفع صورة)</label><input id="s_stxt" value="${esc(st.stamp_text || '')}" placeholder="مثال: مكتبة فيرست — الإدارة"></div><div><label class="l">نص التذييل (عنوان / هاتف ...)</label><textarea id="s_foot" rows="2">${esc(st.footer_text || '')}</textarea></div></div><div class="sp"></div><button class="btn" id="sId">💾 حفظ الهوية</button> <span class="mut" style="font-size:12px">الطابع والتذييل يظهران أسفل كل صفحة مطبوعة (ويمكن إيقافهما من نافذة الطباعة).</span></div>
+   <div class="card"><h3>📥 استيراد من Excel</h3><p class="mut">لاستيراد مبيعات/دفعات/مرتجعات/أسماء من ملف Excel افتح صفحة <a href="#/import" style="color:var(--ac)">استيراد Excel</a>.</p></div>
+   <div class="card"><h3>📥 استيراد بيانات Excel الأصلي (ملفات CSV من سكربت التصدير)</h3><p class="mut">اختر ملفات CSV الناتجة عن سكربت التصدير دفعة واحدة (customers, publishers, sales, purchases, expenses, treasury_months, pending_items, customer_returns, publisher_returns). الحالي في قاعدة البيانات: ${S.data.sales.length} فاتورة.</p><input type="file" id="imf" accept=".csv" multiple><div class="sp"></div><button class="btn" id="imGo">بدء الاستيراد</button><pre id="imlog" class="mut" style="white-space:pre-wrap"></pre></div>
+   <div class="card"><h3>سجل التدقيق (آخر 100 عملية)</h3><button class="btn gh" id="au">عرض</button><div id="aubox"></div></div>`;
+  if (DEMO) { $('#page').insertAdjacentHTML('afterbegin', `<div class="card"><h3>🧪 أدوات الوضع التجريبي</h3><p class="mut">القاعدة فارغة بنفس هيكل Excel (12 شهراً للخزنة من يوليو 2026 إلى يونيو 2027). للتجربة السريعة حمّل بيانات صغيرة، ثم امسحها عندما تريد البدء من الصفر.</p><div class="row"><div class="fit"><button class="btn" id="dSample">تحميل بيانات تجريبية صغيرة</button></div><div class="fit"><button class="btn er" id="dWipe">مسح كل البيانات والبدء من الصفر</button></div></div></div>`);
+    $('#dSample').onclick = () => { if (!sb.__sample()) return toast('توجد بيانات بالفعل — امسحها أولاً', 1); Object.keys(TABLES).forEach(invalidate); toast('تم تحميل البيانات التجريبية ✔'); pageSettings(); };
+    $('#dWipe').onclick = () => { if (!confirm('مسح كل بيانات الوضع التجريبي؟')) return; sb.__wipe(); Object.keys(TABLES).forEach(invalidate); toast('تم المسح'); pageSettings(); }; }
+  $('#sS').onclick = async () => { const rows = [{ key: 'current_term', value: $('#s1').value }, { key: 'credit_alert_ratio', value: String(num($('#s2').value) || 0.9) }, { key: 'credit_alert_basis', value: $('#s3').value }]; const { error } = await sb.from('app_settings').upsert(rows); if (error) return toast(error.message, 1); invalidate('app_settings'); toast('تم الحفظ ✔'); };
+  $('#bk').onclick = async () => { const all = {}; for (const t of Object.keys(TABLES)) { invalidate(t); await load(t); all[t] = S.data[t]; } dl('backup-' + today() + '.json', JSON.stringify(all), 'application/json'); };
+  $('#au').onclick = async () => { const { data, error } = await sb.from('audit_log').select('*').order('id', { ascending: false }).limit(100); if (error) return toast(error.message, 1); $('#aubox').innerHTML = `<div class="tw"><table><thead><tr><th>الوقت</th><th>الجدول</th><th>العملية</th><th>رقم</th></tr></thead><tbody>${data.map(a => `<tr><td class="num">${new Date(a.at).toLocaleString('en-GB')}</td><td>${esc(a.table_name)}</td><td>${esc(a.action)}</td><td>${esc(a.row_id)}</td></tr>`).join('')}</tbody></table></div>`; };
+  $('#imGo').onclick = () => runImport($('#imf').files);
+  let nLogo, nStamp;
+  const prev = (id, v) => { const im = $('#' + id); im.src = v || ''; im.style.display = v ? '' : 'none'; };
+  $('#logoF').onchange = async e => { if (e.target.files[0]) { try { nLogo = await imgToDataUrl(e.target.files[0], 320); prev('logoPrev', nLogo); } catch (x) { toast('تعذّرت قراءة الصورة', 1); } } };
+  $('#stampF').onchange = async e => { if (e.target.files[0]) { try { nStamp = await imgToDataUrl(e.target.files[0], 360); prev('stampPrev', nStamp); } catch (x) { toast('تعذّرت قراءة الصورة', 1); } } };
+  $('#logoX').onclick = () => { nLogo = ''; prev('logoPrev', ''); }; $('#stampX').onclick = () => { nStamp = ''; prev('stampPrev', ''); };
+  $('#s_theme').onchange = e => setTheme(e.target.value);
+  $('#sId').onclick = async () => {
+    const rows = [{ key: 'store_name', value: $('#s_name').value.trim() }, { key: 'stamp_text', value: $('#s_stxt').value.trim() }, { key: 'footer_text', value: $('#s_foot').value.trim() }];
+    if (nLogo !== undefined) rows.push({ key: 'logo', value: nLogo }); if (nStamp !== undefined) rows.push({ key: 'stamp_img', value: nStamp });
+    const { error } = await sb.from('app_settings').upsert(rows); if (error) return toast(error.message, 1);
+    invalidate('app_settings'); await load('app_settings'); lsSet('logo_cache', settings().logo || ''); toast('تم حفظ الهوية ✔'); renderShell(); route();
+  };
+}
+async function runImport(files) {
+  const log = m => { $('#imlog').textContent += m + '\n'; };
+  if (!files.length) return toast('اختر الملفات أولاً', 1);
+  if (S.data.sales.length && !confirm('يوجد بيانات مبيعات بالفعل. الاستيراد سيضيف فوقها وقد يكرر الحركات. متابعة؟')) return;
+  const F = {}; for (const f of files) F[f.name.replace(/\.csv$/i, '')] = parseCsv(await f.text());
+  const chunk = async (table, rows) => { for (let i = 0; i < rows.length; i += 500) { const { error } = await sb.from(table).insert(rows.slice(i, i + 500)); if (error) throw new Error(table + ': ' + error.message); } log(`✔ ${table}: ${rows.length}`); };
+  try {
+    const bool = v => String(v).toLowerCase() === 'true';
+    if (F.customers) { const { error } = await sb.from('customers').upsert(F.customers.map(r => ({ name: r.name.trim(), type: r.type || 'اجل', credit_limit: r.credit_limit === '' ? null : num(r.credit_limit), show_in_balances: bool(r.show_in_balances) })), { onConflict: 'name' }); if (error) throw error; log('✔ customers: ' + F.customers.length); }
+    if (F.publishers) { const { error } = await sb.from('publishers').upsert(F.publishers.map(r => ({ name: r.name.trim(), show_in_balances: bool(r.show_in_balances) })), { onConflict: 'name' }); if (error) throw error; log('✔ publishers: ' + F.publishers.length); }
+    invalidate('customers', 'publishers'); await load('customers', 'publishers');
+    const cm = new Map(S.data.customers.map(x => [x.name, x.id])), pm = new Map(S.data.publishers.map(x => [x.name, x.id]));
+    const need = (m, n, w) => { if (!m.has(n)) throw new Error(`${w} غير موجود: ${n}`); return m.get(n); };
+    if (F.sales) await chunk('sales', F.sales.map(r => ({ invoice_no: r.invoice_no, customer_id: need(cm, r.customer, 'عميل'), invoice_value: num(r.invoice_value), commission: num(r.commission), credit: num(r.credit), payments: num(r.payments), sale_date: r.sale_date || today(), term: r.term || 'الاول', period: r.period || null, source: r.source || 'excel' })));
+    if (F.purchases) await chunk('purchases', F.purchases.map(r => ({ publisher_id: need(pm, r.publisher, 'ناشر'), cash_purchases: num(r.cash_purchases), credit_purchases: num(r.credit_purchases), payments: num(r.payments), purchase_date: r.purchase_date || today(), term: r.term || 'الاول', period: r.period || null, source: r.source || 'excel' })));
+    if (F.expenses) await chunk('expenses', F.expenses.map(r => ({ category: r.category || 'أخرى', amount: num(r.amount), description: r.description, expense_date: r.expense_date || today(), period: r.period || null })));
+    if (F.treasury_months) { const { error } = await sb.from('treasury_months').upsert(F.treasury_months.map(r => ({ month: r.month, opening_override: r.opening_override === '' ? null : num(r.opening_override), cash_box: num(r.cash_box), drawer: num(r.drawer), post: num(r.post), bank: num(r.bank) }))); if (error) throw error; log('✔ treasury_months: ' + F.treasury_months.length); }
+    if (F.pending_items) await chunk('pending_items', F.pending_items.map(r => ({ month: r.month, label: r.label, amount: num(r.amount), kind: 'مستورد', carry: false })));
+    if (F.customer_returns) await chunk('customer_returns', F.customer_returns.map(r => ({ customer_id: need(cm, r.customer, 'عميل'), term: r.term, amount: num(r.amount), return_date: r.return_date, note: r.note })));
+    if (F.publisher_returns) await chunk('publisher_returns', F.publisher_returns.map(r => ({ publisher_id: need(pm, r.publisher, 'ناشر'), term: r.term, amount: num(r.amount), return_date: r.return_date, note: r.note })));
+    Object.keys(TABLES).forEach(invalidate); log('اكتمل الاستيراد بنجاح 🎉'); toast('اكتمل الاستيراد ✔');
+  } catch (e) { log('✖ ' + e.message); toast(e.message, 1); }
+}
+
+/* ============================ تسويات الحساب (عمولة / إضافات بدون خزنة) ============================ */
+async function pageAdjustments() {
+  await load('customers', 'publishers', 'adjustments', 'app_settings');
+  const gs = gridState.adj = gridState.adj || { tab: 'c', q: '', from: '', to: '', term: '' }, st = settings(), admin = isAdmin(), isC = gs.tab === 'c';
+  const DIR = { paid: 'تضاف على المدفوع', drawn: 'تضاف على المسحوب' };
+  const nameOf = r => ((S.data[r.kind === 'c' ? 'customers' : 'publishers'].find(x => x.id === (r.kind === 'c' ? r.customer_id : r.publisher_id))) || {}).name || '';
+  const list = () => S.data.adjustments.filter(r => r.kind === gs.tab && dOk(r.adj_date, gs) && (!gs.term || r.term === gs.term) && (!gs.q || norm(nameOf(r) + ' ' + (r.note || '')).includes(norm(gs.q))))
+    .sort((a, b) => String(b.adj_date).localeCompare(String(a.adj_date)) || b.id - a.id);
+  $('#page').innerHTML = `<div class="note">هذه التسويات (عمولة أو أي مبلغ يُضاف على <b>المدفوع</b> أو على <b>المسحوب</b>) تؤثر فقط على <b>أرصدة وكشوف الحساب</b>، ولا تمر على الخزنة ولا تؤثر على الجرد أو العجز.</div>
+   <div class="card"><div class="tabs"><button data-t="c" class="${isC ? 'on' : ''}">تسويات العملاء</button><button data-t="p" class="${!isC ? 'on' : ''}">تسويات الناشرين</button></div>
+   <div class="wr"><div class="grid g4" id="af">
+     <div><label class="l">التاريخ</label><input type="date" id="af_d" value="${today()}"></div>
+     <div><label class="l">${isC ? 'اسم العميل' : 'اسم الناشر'}</label><input id="af_n" list="af_dl" data-ref="${isC ? 'customers' : 'publishers'}" autocomplete="off" placeholder="اكتب أو اختر — الجديد يُضاف تلقائياً"><datalist id="af_dl">${S.data[isC ? 'customers' : 'publishers'].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>
+     <div><label class="l">نوع التسوية</label><select id="af_k"><option value="drawn">${DIR.drawn}</option><option value="paid">${DIR.paid}</option></select></div>
+     <div><label class="l">المبلغ</label><input class="num money" id="af_a" inputmode="decimal" placeholder="0"></div>
+     <div><label class="l">الترم</label><select id="af_t">${TERMS.map(t => `<option ${(st.current_term || 'الاول') === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+     <div style="grid-column:span 2"><label class="l">بيان / ملاحظة (مثال: عمولة)</label><input id="af_o"></div></div><div class="sp"></div><button class="btn" id="afAdd">💾 حفظ التسوية</button><div class="sp"></div></div>
+   <div class="row noprint"><div><label class="l">بحث</label><input id="aq" value="${esc(gs.q)}"></div><div class="fit"><label class="l">من</label><input type="date" id="afr" value="${esc(gs.from)}"></div><div class="fit"><label class="l">إلى</label><input type="date" id="ato" value="${esc(gs.to)}"></div><div class="fit"><label class="l">الترم</label><select id="atm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="aprint">🖨️ طباعة</button></div></div><div class="sp"></div><div id="abox"></div></div>`;
+  const draw = () => {
+    const rows = list(), tp = sum(rows.filter(r => r.direction === 'paid'), r => r.amount), td = sum(rows.filter(r => r.direction === 'drawn'), r => r.amount);
+    $('#abox').innerHTML = `<div class="tw"><table><thead><tr><th>#</th><th>التاريخ</th><th>${isC ? 'العميل' : 'الناشر'}</th><th>النوع</th><th class="n">المبلغ</th><th>الترم</th><th>ملاحظة</th><th class="noprint"></th></tr></thead><tbody>${rows.map((r, i) => `<tr><td class="mut num">${i + 1}</td><td class="num">${r.adj_date}</td><td>${esc(nameOf(r))}</td><td><span class="tag ${r.direction === 'paid' ? 'ok' : 'wa'}">${DIR[r.direction]}</span></td><td class="n">${fmt(r.amount)}</td><td>${r.term}</td><td style="white-space:normal">${esc(r.note)}</td><td class="noprint">${admin ? `<button class="btn gh sm" data-del="${r.id}">🗑️</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="mut" style="text-align:center;padding:20px">لا توجد تسويات</td></tr>'}</tbody><tfoot><tr><td></td><td colspan="3">إجمالي: على المدفوع ${fmt(tp)} — على المسحوب ${fmt(td)}</td><td class="n">${fmt(tp + td)}</td><td colspan="3"></td></tr></tfoot></table></div>`;
+    $$('[data-del]', $('#abox')).forEach(b => b.onclick = async () => { if (!confirm('حذف هذه التسوية؟')) return; const { error } = await sb.from('adjustments').delete().eq('id', +b.dataset.del); if (error) return toast(error.message, 1); invalidate('adjustments'); await load('adjustments'); draw(); });
+  };
+  draw();
+  $$('.tabs button').forEach(b => b.onclick = () => { gs.tab = b.dataset.t; pageAdjustments(); });
+  const bind = (id, k) => { const x = $('#' + id); x.oninput = x.onchange = () => { gs[k] = x.value; draw(); }; };
+  bind('aq', 'q'); bind('afr', 'from'); bind('ato', 'to'); bind('atm', 'term');
+  $('#afAdd').onclick = async () => {
+    const btn = $('#afAdd'); btn.disabled = true;
+    try {
+      const amt = r2(num($('#af_a').value)); if (!(amt > 0)) throw new Error('أدخل مبلغاً صحيحاً'); if (!$('#af_d').value) throw new Error('التاريخ مطلوب');
+      const id = await resolveRef(isC ? 'adj_c' : 'adj_p', $('#af_n').value);
+      const rec = { kind: gs.tab, customer_id: isC ? id : null, publisher_id: isC ? null : id, direction: $('#af_k').value, amount: amt, adj_date: $('#af_d').value, term: $('#af_t').value, note: $('#af_o').value.trim() };
+      const { data, error } = await sb.from('adjustments').insert(rec).select().single(); if (error) throw error;
+      S.data.adjustments.push(data); await load('customers', 'publishers'); toast('تم حفظ التسوية ✔ (لا تؤثر على الخزنة)'); $('#af_a').value = ''; $('#af_o').value = ''; $('#af_n').value = ''; $('#af_n').focus(); draw();
+    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+  };
+  $('#aprint').onclick = () => printDialog({ key: 'adj' + gs.tab, title: isC ? 'تسويات العملاء' : 'تسويات الناشرين', filters: { date: true, term: true, ref: { label: isC ? 'العميل' : 'الناشر', list: S.data[isC ? 'customers' : 'publishers'] } },
+    cols: [{ k: 'date', l: 'التاريخ', t: 't' }, { k: 'name', l: isC ? 'العميل' : 'الناشر', t: 't' }, { k: 'dir', l: 'النوع', t: 't' }, { k: 'amount', l: 'المبلغ', t: 'm', sum: true }, { k: 'term', l: 'الترم', t: 't' }, { k: 'note', l: 'ملاحظة', t: 't' }],
+    build(o) { return { rows: S.data.adjustments.filter(r => r.kind === gs.tab && dOk(r.adj_date, o) && (!o.term || r.term === o.term) && (!o.ref || norm(nameOf(r)).includes(norm(o.ref)))).sort((a, b) => String(a.adj_date).localeCompare(String(b.adj_date)) || a.id - b.id).map(r => ({ date: r.adj_date, name: nameOf(r), dir: DIR[r.direction], amount: r.amount, term: r.term, note: r.note })) }; } }, { from: gs.from, to: gs.to, term: gs.term });
+}
+
+/* ============================ استيراد من Excel / CSV ============================ */
+let _xl = null;
+function ensureXlsx() {
+  if (window.XLSX) return Promise.resolve(window.XLSX); if (_xl) return _xl;
+  _xl = new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = () => res(window.XLSX); sc.onerror = () => { _xl = null; rej(new Error('تعذّر تحميل مكتبة Excel (تحقق من الإنترنت). يمكنك حفظ الملف بصيغة CSV واستيراده.')); }; document.head.appendChild(sc); });
+  return _xl;
+}
+const a2e = v => String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/٫/g, '.').replace(/٬/g, ',');
+const impNum = v => { if (typeof v === 'number') return v; const t = a2e(v == null ? '' : v).replace(/[\s,]/g, ''); if (t === '') return null; const x = Number(t); return isFinite(x) ? x : NaN; };
+const validYmd = (y, m, d) => +m >= 1 && +m <= 12 && +d >= 1 && +d <= 31 && +y >= 1990 && +y <= 2100;
+const impDate = v => {
+  if (v === '' || v == null) return '';
+  if (v instanceof Date) return isNaN(v) ? null : v.toISOString().slice(0, 10);
+  if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 864e5)); return isNaN(d) || v < 20000 || v > 80000 ? null : d.toISOString().slice(0, 10); }
+  const t = a2e(v).trim(); let m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if (m) return validYmd(m[1], m[2], m[3]) ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null;
+  m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/);
+  if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return validYmd(y, m[2], m[1]) ? `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : null; }
+  return null;
+};
+const impTerm = v => { const t = norm(a2e(v == null ? '' : v)); if (!t) return ''; if (t.includes('ثان') || /(^|\D)2(\D|$)/.test(t) || t.includes('second')) return 'الثانى'; if (t.includes('اول') || /(^|\D)1(\D|$)/.test(t) || t.includes('first')) return 'الاول'; return null; };
+const impPm = v => { const t = norm(v == null ? '' : v); if (!t) return ''; if (/بنك|bank|فيزا|تحويل|انستا/.test(t)) return 'بنك'; if (/بريد|post/.test(t)) return 'بريد'; return 'نقدى'; };
+const impDir = v => { const t = norm(v == null ? '' : v); if (/مدفوع|دفع|paid/.test(t)) return 'paid'; if (/مسحوب|سحب|drawn/.test(t)) return 'drawn'; return null; };
+const A = { name: ['الاسم', 'اسم العميل', 'العميل', 'اسم الناشر', 'الناشر', 'name'], amount: ['المبلغ', 'القيمه', 'القيمة', 'الدفعات', 'المدفوع', 'دفعه', 'دفعة', 'amount'], date: ['التاريخ', 'تاريخ', 'date'], term: ['الترم', 'الفصل', 'term'], pm: ['طريقه الدفع', 'طريقة الدفع', 'الدفع', 'method'], note: ['ملاحظه', 'ملاحظة', 'بيان', 'البيان', 'note'] };
+const IMP = {
+  customers: { t: 'عملاء (أسماء)', table: 'customers', f: [['name', 'اسم العميل', A.name, 'text', 1], ['type', 'النوع (اجل/نقدى)', ['النوع', 'نوع العميل', 'type'], 'ctype'], ['credit_limit', 'الحد الائتماني', ['الحد الائتماني', 'الحد', 'credit limit', 'credit'], 'num']] },
+  publishers: { t: 'ناشرون (أسماء)', table: 'publishers', f: [['name', 'اسم الناشر', A.name, 'text', 1]] },
+  sales: { t: 'مبيعات', table: 'sales', ref: 'customers', f: [['invoice_no', 'رقم الفاتورة', ['رقم الفاتورة', 'الفاتورة', 'رقم', 'invoice'], 'text'], ['_n', 'اسم العميل', A.name, 'ref', 1], ['invoice_value', 'قيمة الفاتورة', ['قيمه الفاتوره', 'قيمة الفاتورة', 'الاجمالي', 'اجمالي'], 'num'], ['commission', 'العمولة', ['العموله', 'العمولة', 'commission'], 'num'], ['inv_type', 'نوع الفاتورة (اجل/نقدى)', ['نوع الفاتوره', 'نوع الفاتورة', 'نوع'], 'ctype'], ['credit', 'الاجل', ['الاجل', 'اجل', 'credit'], 'num'], ['payments', 'الدفعات', ['الدفعات', 'المدفوع', 'payments'], 'num'], ['pay_method', 'طريقة الدفع', A.pm, 'pm'], ['sale_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term']],
+    make: (r, p) => { const v = r.invoice_value || 0, c = r.commission || 0, typ = r.inv_type_set ? r.inv_type : (p.type === 'نقدى' || (r.credit === 0 && v > 0) ? 'نقدى' : 'اجل'), cash = typ === 'نقدى', pay = r.payments || 0, needM = pay > 0 || (cash && v > 0); return { invoice_no: r.invoice_no || (v ? '' : r.sale_date), inv_type: typ, is_pending: false, customer_id: p.id, invoice_value: v, commission: c, credit: cash ? 0 : (r.credit != null ? r.credit : r2(v - c)), payments: pay, pay_method: needM ? (r.pay_method || 'نقدى') : '', sale_date: r.sale_date, term: r.term, source: 'import' }; } },
+  pay_c: { t: 'دفعات العملاء', table: 'sales', ref: 'customers', f: [['_n', 'اسم العميل', A.name, 'ref', 1], ['amount', 'المبلغ', A.amount, 'num', 1], ['invoice_no', 'رقم الإيصال', ['رقم الايصال', 'رقم الإيصال', 'الايصال', 'رقم الفاتورة', 'رقم'], 'text'], ['pay_method', 'طريقة الدفع', A.pm, 'pm'], ['sale_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term']],
+    make: (r, p) => ({ invoice_no: r.invoice_no || r.sale_date, inv_type: 'اجل', is_pending: false, customer_id: p.id, invoice_value: 0, commission: 0, credit: 0, payments: r.amount, pay_method: r.pay_method || 'نقدى', sale_date: r.sale_date, term: r.term, source: 'import' }) },
+  purchases: { t: 'مشتريات', table: 'purchases', ref: 'publishers', f: [['_n', 'اسم الناشر', A.name, 'ref', 1], ['cash_purchases', 'مشتريات نقدى', ['مشتريات نقدى', 'نقدى', 'نقدي'], 'num'], ['credit_purchases', 'مشتريات اجل', ['مشتريات اجل', 'اجل', 'الاجل', 'المسحوب'], 'num'], ['payments', 'دفعات ناشرين', ['دفعات ناشرين', 'الدفعات', 'المدفوع'], 'num'], ['pay_method', 'طريقة الدفع', A.pm, 'pm'], ['purchase_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term']],
+    make: (r, p) => ({ publisher_id: p.id, cash_purchases: r.cash_purchases || 0, credit_purchases: r.credit_purchases || 0, payments: r.payments || 0, pay_method: (r.payments || r.cash_purchases) ? (r.pay_method || 'نقدى') : '', purchase_date: r.purchase_date, term: r.term, source: 'import' }) },
+  pay_p: { t: 'دفعات الناشرين', table: 'purchases', ref: 'publishers', f: [['_n', 'اسم الناشر', A.name, 'ref', 1], ['amount', 'المبلغ', A.amount, 'num', 1], ['pay_method', 'طريقة الدفع', A.pm, 'pm'], ['purchase_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term']],
+    make: (r, p) => ({ publisher_id: p.id, cash_purchases: 0, credit_purchases: 0, payments: r.amount, pay_method: r.pay_method || 'نقدى', purchase_date: r.purchase_date, term: r.term, source: 'import' }) },
+  expenses: { t: 'مصروفات', table: 'expenses', f: [['category', 'البند', ['البند', 'التصنيف', 'category'], 'text'], ['amount', 'المبلغ', A.amount, 'num', 1], ['pay_method', 'طريقة الدفع', A.pm, 'pm'], ['description', 'بيان', A.note, 'text'], ['expense_date', 'التاريخ', A.date, 'date']],
+    make: r => ({ category: r.category || 'أخرى', amount: r.amount, pay_method: r.pay_method || 'نقدى', description: r.description || '', expense_date: r.expense_date }) },
+  customer_returns: { t: 'مرتجعات العملاء', table: 'customer_returns', ref: 'customers', f: [['_n', 'اسم العميل', A.name, 'ref', 1], ['amount', 'قيمة المرتجع', ['قيمه المرتجع', 'قيمة المرتجع', 'المرتجع', 'المبلغ'], 'num', 1], ['return_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term'], ['note', 'ملاحظة', A.note, 'text']],
+    make: (r, p) => ({ customer_id: p.id, amount: r.amount, return_date: r.return_date, term: r.term, note: r.note || '' }) },
+  publisher_returns: { t: 'مرتجعات الناشرين', table: 'publisher_returns', ref: 'publishers', f: [['_n', 'اسم الناشر', A.name, 'ref', 1], ['amount', 'قيمة المرتجع', ['قيمه المرتجع', 'قيمة المرتجع', 'المرتجع', 'المبلغ'], 'num', 1], ['return_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term'], ['note', 'ملاحظة', A.note, 'text']],
+    make: (r, p) => ({ publisher_id: p.id, amount: r.amount, return_date: r.return_date, term: r.term, note: r.note || '' }) },
+  adj_c: { t: 'تسويات العملاء (بدون خزنة)', table: 'adjustments', ref: 'customers', f: [['_n', 'اسم العميل', A.name, 'ref', 1], ['amount', 'المبلغ', A.amount, 'num', 1], ['direction', 'النوع (على المدفوع / على المسحوب)', ['النوع', 'الاتجاه', 'نوع التسويه', 'نوع التسوية'], 'dir', 1], ['adj_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term'], ['note', 'ملاحظة', A.note, 'text']],
+    make: (r, p) => ({ kind: 'c', customer_id: p.id, publisher_id: null, direction: r.direction, amount: r.amount, adj_date: r.adj_date, term: r.term, note: r.note || '' }) },
+  adj_p: { t: 'تسويات الناشرين (بدون خزنة)', table: 'adjustments', ref: 'publishers', f: [['_n', 'اسم الناشر', A.name, 'ref', 1], ['amount', 'المبلغ', A.amount, 'num', 1], ['direction', 'النوع (على المدفوع / على المسحوب)', ['النوع', 'الاتجاه', 'نوع التسويه', 'نوع التسوية'], 'dir', 1], ['adj_date', 'التاريخ', A.date, 'date'], ['term', 'الترم', A.term, 'term'], ['note', 'ملاحظة', A.note, 'text']],
+    make: (r, p) => ({ kind: 'p', customer_id: null, publisher_id: p.id, direction: r.direction, amount: r.amount, adj_date: r.adj_date, term: r.term, note: r.note || '' }) }
+};
+/** تحويل صفوف الملف إلى سجلات حسب الربط. يعيد { recs:[{rec,line}], errs:[] } */
+function impConvert(def, rows, map, term) {
+  const recs = [], errs = [];
+  rows.forEach((row, ri) => {
+    if (row.every(c => c === '' || c == null)) return;
+    const rec = {}, e = [];
+    def.f.forEach(([k, l, , t, req]) => {
+      const ci = map[k], raw = (ci === '' || ci == null) ? '' : row[ci], empty = raw === '' || raw == null || String(raw).trim() === '';
+      if (t === 'text' || t === 'ref') { rec[k] = empty ? '' : String(raw).trim(); if (req && !rec[k]) e.push(`«${l}» فارغ`); }
+      else if (t === 'num') { const n = impNum(raw); if (Number.isNaN(n)) e.push(`«${l}» ليس رقماً: ${raw}`); else { rec[k] = n; if (req && (n == null || n <= 0) && k === 'amount') e.push(`«${l}» يجب أن يكون أكبر من صفر`); } }
+      else if (t === 'date') { const d = impDate(raw); if (d === null) e.push(`«${l}» تاريخ غير مفهوم: ${raw}`); else rec[k] = d || today(); }
+      else if (t === 'term') { const x = impTerm(raw); if (x === null) e.push(`«${l}» غير مفهوم: ${raw}`); else rec[k] = x || term; }
+      else if (t === 'pm') rec[k] = impPm(raw);
+      else if (t === 'dir') { const x = impDir(raw); if (!x) e.push(`«${l}» يجب أن يحتوي «مدفوع» أو «مسحوب»`); else rec[k] = x; }
+      else if (t === 'ctype') { const n = norm(raw); rec[k] = /نقد|cash/.test(n) ? 'نقدى' : 'اجل'; rec[k + '_set'] = !empty; }
+    });
+    if (def.table === 'sales' && def.ref && def.f.length > 6 && num(rec.invoice_value) === 0 && num(rec.payments) === 0 && num(rec.credit) === 0) e.push('لا توجد قيمة فاتورة ولا دفعات');
+    if (e.length) errs.push(`الصف ${ri + 2}: ${e.join('، ')}`); else recs.push({ rec, line: ri + 2 });
+  });
+  return { recs, errs };
+}
+async function pageImport() {
+  await load('customers', 'publishers', 'app_settings');
+  const st = settings(), im = { key: 'sales', headers: [], rows: [], wb: null, map: {} };
+  $('#page').innerHTML = `<div class="note">يمكنك استيراد أي بيانات من ملف Excel (.xlsx) أو CSV: مبيعات، دفعات، مشتريات، مصروفات، مرتجعات، تسويات، أو قوائم أسماء العملاء/الناشرين. حمّل القالب أولاً، أو ارفع ملفك وسيُربط كل عمود بحقله تلقائياً (ويمكنك تعديل الربط قبل الاستيراد). تتم المعاينة والتحقق قبل حفظ أي شيء.</div>
+   <div class="card"><h3>📥 استيراد من ملف Excel</h3><div class="row"><div><label class="l">1) نوع البيانات</label><select id="ik">${Object.entries(IMP).map(([k, d]) => `<option value="${k}">${d.t}</option>`).join('')}</select></div><div class="fit"><label class="l">&nbsp;</label><button class="btn gh" id="itpl">⬇️ تنزيل قالب Excel</button></div><div><label class="l">2) الملف (.xlsx / .xls / .csv)</label><input type="file" id="ifile" accept=".xlsx,.xls,.csv"></div><div class="fit" id="ishw" style="display:none"><label class="l">الورقة</label><select id="ish"></select></div></div>
+   <div class="sp"></div><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="icr" checked> إنشاء أسماء العملاء/الناشرين غير الموجودة تلقائياً</label><div class="sp"></div><div id="imap"></div><div id="iprev"></div><div id="ilog" class="mut" style="white-space:pre-line;margin-top:10px"></div></div>`;
+  const def = () => IMP[$('#ik').value];
+  const colsOf = () => { const h = im.headers; const m = {}; def().f.forEach(([k, l, al]) => { const ns = [norm(l), ...al.map(norm)]; const i = h.findIndex(x => ns.includes(norm(x))); m[k] = i >= 0 ? i : ''; }); return m; };
+  const drawMap = () => {
+    const d = def(); if (!im.headers.length) { $('#imap').innerHTML = ''; $('#iprev').innerHTML = ''; return; }
+    $('#imap').innerHTML = `<label class="l">3) ربط الأعمدة (اختر عمود الملف لكل حقل)</label><div class="grid g4">${d.f.map(([k, l, , , req]) => `<div><label class="l">${esc(l)}${req ? ' *' : ''}</label><select data-mk="${k}"><option value="">— لا يوجد —</option>${im.headers.map((h, i) => `<option value="${i}" ${String(im.map[k]) === String(i) ? 'selected' : ''}>${esc(h || 'عمود ' + (i + 1))}</option>`).join('')}</select></div>`).join('')}</div>`;
+    $$('[data-mk]').forEach(x => x.onchange = () => { im.map[x.dataset.mk] = x.value === '' ? '' : +x.value; drawPrev(); });
+    drawPrev();
+  };
+  const drawPrev = () => {
+    const d = def(), { recs, errs } = impConvert(d, im.rows, im.map, st.current_term || 'الاول'); im.out = recs;
+    const pv = im.rows.slice(0, 6);
+    $('#iprev').innerHTML = `<div class="sp"></div><div class="mut">صفوف صالحة: <b class="num pos">${recs.length}</b> — صفوف بها أخطاء (ستُتخطى): <b class="num ${errs.length ? 'neg' : ''}">${errs.length}</b></div>
+     ${errs.length ? `<div class="note" style="max-height:140px;overflow:auto;margin-top:8px">${errs.slice(0, 25).map(esc).join('<br>')}${errs.length > 25 ? '<br>...' : ''}</div>` : ''}
+     <div class="tw" style="max-height:240px;margin-top:8px"><table><thead><tr>${im.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${pv.map(r => `<tr>${im.headers.map((h, i) => `<td>${esc(r[i])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
+     <div class="sp"></div><button class="btn" id="igo" ${recs.length ? '' : 'disabled'}>✅ استيراد ${recs.length} صف</button>`;
+    $('#igo').onclick = go;
+  };
+  const loadRows = aoa => {
+    let hi = aoa.findIndex(r => r.filter(c => c !== '' && c != null).length >= 1); if (hi < 0) hi = 0;
+    im.headers = (aoa[hi] || []).map(x => String(x == null ? '' : x).trim()); im.rows = aoa.slice(hi + 1); im.map = colsOf(); drawMap();
+  };
+  const readSheet = name => { const ws = im.wb.Sheets[name]; loadRows(window.XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' })); };
+  $('#ik').onchange = () => { if (im.headers.length) { im.map = colsOf(); drawMap(); } };
+  $('#ifile').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return; $('#ilog').textContent = '';
+    try {
+      if (/\.csv$/i.test(f.name)) { const t = (await f.text()).replace(/^﻿/, ''); const rr = parseCsv(t); const hd = rr.length ? Object.keys(rr[0]) : []; $('#ishw').style.display = 'none'; im.headers = hd; im.rows = rr.map(o => hd.map(h => o[h])); im.map = colsOf(); drawMap(); }
+      else { const X = await ensureXlsx(); im.wb = X.read(await f.arrayBuffer(), { type: 'array' }); const names = im.wb.SheetNames; $('#ish').innerHTML = names.map(n => `<option>${esc(n)}</option>`).join(''); $('#ishw').style.display = names.length > 1 ? '' : 'none'; $('#ish').onchange = () => readSheet($('#ish').value); readSheet(names[0]); }
+    } catch (err) { toast(err.message || 'تعذّرت قراءة الملف', 1); }
+  };
+  $('#itpl').onclick = async () => {
+    const d = def(), head = d.f.map(x => x.slice(1, 2)[0]), ex = d.f.map(([k, , , t]) => t === 'date' ? today() : t === 'num' ? 1000 : t === 'term' ? 'الاول' : t === 'pm' ? 'نقدى' : t === 'dir' ? 'على المدفوع' : t === 'ctype' ? 'اجل' : t === 'ref' || k === 'name' ? 'مثال: الاسم' : '');
+    try { const X = await ensureXlsx(); const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([head, ex]), 'data'); X.writeFile(wb, `قالب_${d.t}.xlsx`); }
+    catch (err) { dl(`قالب_${d.t}.csv`, toCsv(head, [ex])); toast('تعذّر تحميل مكتبة Excel فتم تنزيل القالب بصيغة CSV', 1); }
+  };
+  async function go() {
+    const d = def(), recs = im.out || []; if (!recs.length) return;
+    if (!confirm(`سيتم استيراد ${recs.length} صف إلى «${d.t}». متابعة؟`)) return;
+    const btn = $('#igo'); btn.disabled = true; const log = m => { $('#ilog').textContent += m + '\n'; }; $('#ilog').textContent = '';
+    try {
+      await load('customers', 'publishers');
+      const chunk = async (table, arr) => { for (let i = 0; i < arr.length; i += 400) { const { error } = await sb.from(table).insert(arr.slice(i, i + 400)); if (error) throw new Error(error.message); } };
+      if (d.table === 'customers' || d.table === 'publishers') {
+        const rows = recs.map(({ rec }) => d.table === 'customers' ? { name: rec.name, type: rec.type || 'اجل', credit_limit: rec.credit_limit == null ? null : rec.credit_limit } : { name: rec.name });
+        const { error } = await sb.from(d.table).upsert(rows, { onConflict: 'name' }); if (error) throw new Error(error.message);
+        log(`✔ تم استيراد/تحديث ${rows.length} اسم`);
+      } else {
+        const refT = d.ref; let mp = new Map(S.data[refT].map(x => [norm(x.name), x])); const miss = new Map();
+        const create = $('#icr').checked, skipped = [];
+        recs.forEach(({ rec, line }) => { const k = norm(rec._n); if (!mp.has(k)) { if (create) miss.set(k, rec._n); else skipped.push(line); } });
+        if (miss.size) { const rows = [...miss.values()].map(n => refT === 'customers' ? { name: n, type: 'اجل' } : { name: n }); const { error } = await sb.from(refT).insert(rows); if (error) throw new Error(error.message); invalidate(refT); await load(refT); mp = new Map(S.data[refT].map(x => [norm(x.name), x])); log(`➕ أُنشئ ${miss.size} اسم جديد في ${refT === 'customers' ? 'العملاء' : 'الناشرين'}`); }
+        const out = []; recs.forEach(({ rec, line }) => { const p = mp.get(norm(rec._n)); if (!p) return; out.push(d.make(rec, p)); });
+        await chunk(d.table, out); log(`✔ تم استيراد ${out.length} صف إلى «${d.t}»`); if (skipped.length) log(`⚠ تم تخطي ${skipped.length} صف لأن الاسم غير موجود (صفوف: ${skipped.slice(0, 15).join(', ')})`);
+      }
+      Object.keys(TABLES).forEach(invalidate); toast('تم الاستيراد ✔'); im.rows = []; im.headers = []; $('#ifile').value = ''; $('#imap').innerHTML = ''; $('#iprev').innerHTML = '';
+    } catch (err) { log('✖ ' + err.message); toast('فشل الاستيراد: ' + err.message, 1); btn.disabled = false; }
+  }
+}
+
+async function pageHome() {   // شاشة الموظف
+  $('#page').innerHTML = `<div class="card"><h3>مرحباً ${esc(me.full_name || me.email)}</h3><p class="mut">اختر نوع الإدخال من القائمة. تظهر لك الحركات التي أدخلتها فقط.</p><div class="grid g3"><a class="btn" href="#/sales">🧾 المبيعات</a><a class="btn" href="#/pay-c">💵 دفعات العملاء</a><a class="btn" href="#/purchases">📦 المشتريات</a><a class="btn" href="#/pay-p">💳 دفعات الناشرين</a><a class="btn" href="#/expenses">💸 المصروفات</a><a class="btn" href="#/customer_returns">↩️ المرتجعات</a></div></div>`;
+}
+
+/* ============================ التوجيه والهيكل ============================ */
+const ROUTES = [
+  ['dashboard', '📊', 'لوحة المعلومات', 'admin', () => pageDashboard()],
+  ['sales', '🧾', 'المبيعات', 'all', () => pageGrid('sales')],
+  ['pay-c', '💵', 'دفعات العملاء', 'all', () => pagePayments('c')],
+  ['purchases', '📦', 'المشتريات', 'all', () => pageGrid('purchases')],
+  ['pay-p', '💳', 'دفعات الناشرين', 'all', () => pagePayments('p')],
+  ['expenses', '💸', 'المصروفات', 'all', () => pageGrid('expenses')],
+  ['customer_returns', '↩️', 'مرتجعات العملاء', 'all', () => pageGrid('customer_returns')],
+  ['publisher_returns', '↪️', 'مرتجعات الناشرين', 'all', () => pageGrid('publisher_returns')],
+  ['treasury', '🏦', 'الخزنة', 'admin', () => pageTreasury()],
+  ['bal-c', '👥', 'أرصدة العملاء', 'admin', () => pageBalances('c')],
+  ['bal-p', '🏢', 'أرصدة الناشرين', 'admin', () => pageBalances('p')],
+  ['adjustments', '➕', 'تسويات الحساب (بدون خزنة)', 'admin', () => pageAdjustments()],
+  ['stmt-c', '📄', 'كشف حساب عميل', 'admin', (id) => pageStatement('c', id)],
+  ['stmt-p', '📃', 'كشف حساب ناشر', 'admin', (id) => pageStatement('p', id)],
+  ['masters', '🗂️', 'العملاء والناشرون', 'admin', () => pageMasters()],
+  ['users', '🔐', 'المستخدمون', 'owner', () => pageUsers()],
+  ['import', '📥', 'استيراد Excel', 'owner', () => pageImport()],
+  ['settings', '⚙️', 'الإعدادات والهوية', 'owner', () => pageSettings()]
+];
+let rtTimer = null, curRoute = null;
+const routeOk = r => r[3] === 'all' || (r[3] === 'admin' && canSeeAll()) || (r[3] === 'owner' && isAdmin());
+function renderShell() {
+  $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><div class="brand">${brand().logo ? `<img src="${brand().logo}" alt="">` : '<b>📚</b>'}<span>${esc(brand().name)}</span></div><nav>${ROUTES.filter(routeOk).map(r => `<a href="#/${r[0]}" data-r="${r[0]}">${r[1]} ${r[2]}</a>`).join('')}</nav><div class="me"><div>${esc(me.full_name || me.email)}</div><div style="opacity:.6;font-size:12px">${roleLabel(me.role)}</div>${DEMO ? `<div style="margin-top:8px"><span class="tag wa">وضع تجريبي</span> <button class="btn gh sm" id="swRole" style="color:#fff;border-color:rgba(255,255,255,.3)">🔁 ${me.role === 'admin' ? 'جرّب كموظف' : me.role === 'staff' ? 'جرّب قراءة فقط' : 'جرّب كمدير'}</button></div>` : ''}<div style="display:flex;gap:6px;margin-top:8px"><button class="btn gh sm" id="theme" style="color:#fff;border-color:rgba(255,255,255,.3)">🎨 ${TN[document.documentElement.dataset.theme] || ''}</button><button class="btn gh sm" id="out" style="color:#fff;border-color:rgba(255,255,255,.3)">خروج</button></div></div></aside><div class="scrim" id="scrim"></div><div class="main"><div class="top"><button class="btn gh sm burger" id="burger">☰</button><h2 id="ttl"></h2>${DEMO ? '<span class="tag wa">وضع تجريبي — البيانات في هذا المتصفح فقط</span>' : ''}</div><div class="page" id="page"></div></div></div>`;
+  $('#theme').onclick = () => { const nx = THEMES[(THEMES.indexOf(document.documentElement.dataset.theme) + 1) % THEMES.length]; setTheme(nx); $('#theme').textContent = '🎨 ' + TN[nx]; };
+  document.body.classList.toggle('ro', !!isViewer());
+  if ($('#swRole')) $('#swRole').onclick = () => { lsSet('demo_role', me.role === 'admin' ? 'staff' : me.role === 'staff' ? 'viewer' : 'admin'); location.hash = ''; location.reload(); };
+  $('#out').onclick = async () => { await sb.auth.signOut(); location.hash = ''; location.reload(); };
+  const tog = () => { $('#side').classList.toggle('open'); $('#scrim').classList.toggle('open'); };
+  $('#burger').onclick = tog; $('#scrim').onclick = tog;
+}
+async function route() {
+  if (!me) return;
+  const parts = (location.hash.replace(/^#\//, '') || '').split('/'); let name = parts[0] || (canSeeAll() ? 'dashboard' : 'home');
+  const r = ROUTES.find(x => x[0] === name);
+  if (name === 'home' || !r || !routeOk(r)) { name = canSeeAll() ? 'dashboard' : 'home'; }
+  curRoute = name; $$('.side a').forEach(a => a.classList.toggle('on', a.dataset.r === name)); $('#ttl').textContent = name === 'home' ? 'الرئيسية' : ROUTES.find(x => x[0] === name)[2];
+  $('#side').classList.remove('open'); $('#scrim').classList.remove('open');
+  $('#page').innerHTML = '<div class="mut" style="padding:30px;text-align:center">جارٍ التحميل...</div>';
+  try { if (name === 'home') await pageHome(); else await ROUTES.find(x => x[0] === name)[4](parts[1]); } catch (e) { $('#page').innerHTML = `<div class="card"><b class="neg">تعذّر التحميل:</b> ${esc(e.message)}</div>`; }
+}
+function startRealtime() {
+  sb.channel('rt').on('postgres_changes', { event: '*', schema: 'public' }, p => {
+    if (S.data[p.table]) S.data[p.table] = null;
+    clearTimeout(rtTimer); rtTimer = setTimeout(() => { const a = document.activeElement; if (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && $('#page').contains(a)) return; if (!document.querySelector('.modal')) route(); }, 1200);
+  }).subscribe();
+}
+
+
+/* ============================ الوضع التجريبي: قاعدة بيانات محلية داخل المتصفح (بدون Supabase) ============================ */
+let DEMO = false;
+function makeLocalClient(roleKey) {
+  const KEY = 'bk_demo_db_v2', uid = 'demo-' + roleKey; let mem = null;
+  const PEOPLE = [{ id: 'demo-admin', email: 'admin@demo', full_name: 'المدير (تجريبي)', role: 'admin', active: true, created_at: '2026-01-01' }, { id: 'demo-staff', email: 'staff@demo', full_name: 'موظف (تجريبي)', role: 'staff', active: true, created_at: '2026-01-02' }, { id: 'demo-viewer', email: 'viewer@demo', full_name: 'قراءة فقط (تجريبي)', role: 'viewer', active: true, created_at: '2026-01-03' }];
+  const months = () => Array.from({ length: 12 }, (_, i) => ({ month: new Date(Date.UTC(2026, 6 + i, 1)).toISOString().slice(0, 7), opening_override: null, cash_box: 0, drawer: 0, post: 0, bank: 0 }));
+  const fresh = () => ({ customers: [], publishers: [], sales: [], purchases: [], expenses: [], customer_returns: [], publisher_returns: [], pending_items: [], adjustments: [], audit_log: [], treasury_months: months(), profiles: PEOPLE.map(x => ({ ...x })),
+    app_settings: [{ key: 'current_term', value: 'الاول' }, { key: 'credit_alert_ratio', value: '0.9' }, { key: 'credit_alert_basis', value: 'payments' }] });
+  const db = () => { if (mem) return mem; try { const x = localStorage.getItem(KEY); if (x) mem = JSON.parse(x); } catch (e) {} mem = mem || fresh(); PEOPLE.forEach(p => { if (!mem.profiles.some(x => x.id === p.id)) mem.profiles.push({ ...p }); }); return mem; };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) {} };
+  const TX = ['sales', 'purchases', 'expenses', 'customer_returns', 'publisher_returns', 'adjustments'];
+  const pkOf = t => t === 'treasury_months' ? 'month' : t === 'app_settings' ? 'key' : 'id';
+  const clone = x => JSON.parse(JSON.stringify(x));
+  const used = (t, id) => t === 'customers' ? (db().sales.some(r => r.customer_id === id) || db().customer_returns.some(r => r.customer_id === id) || (db().adjustments || []).some(r => r.customer_id === id)) : t === 'publishers' ? (db().purchases.some(r => r.publisher_id === id) || db().publisher_returns.some(r => r.publisher_id === id) || (db().adjustments || []).some(r => r.publisher_id === id)) : false;
+  function audit(t, a, row) { if (t === 'audit_log') return; const L = db().audit_log; L.push({ id: (L.length ? L[L.length - 1].id : 0) + 1, at: new Date().toISOString(), table_name: t, action: a, row_id: String(row.id || row.month || row.key || '') }); if (L.length > 500) L.shift(); }
+  function qb(table) {
+    const q = { op: 'select', f: [], ord: null, rng: null, lim: null, one: false, payload: null };
+    const api = { select() { return api; }, order(c, o) { q.ord = [c, o && o.ascending === false ? -1 : 1]; return api; }, range(a, b) { q.rng = [a, b]; return api; }, limit(n) { q.lim = n; return api; },
+      eq(c, v) { q.f.push([c, v]); return api; }, single() { q.one = true; return api; }, maybeSingle() { q.one = true; return api; },
+      insert(p) { q.op = 'insert'; q.payload = p; return api; }, update(p) { q.op = 'update'; q.payload = p; return api; }, upsert(p, o) { q.op = 'upsert'; q.payload = p; q.on = o && o.onConflict; return api; }, delete() { q.op = 'delete'; return api; },
+      then(res, rej) { return Promise.resolve().then(run).then(res, rej); } };
+    function run() {
+      const D = db(), t = D[table] = D[table] || [], pk = pkOf(table); let out = [];
+      const match = r => q.f.every(([c, v]) => r[c] === v); const err = m => ({ data: null, error: { message: m } });
+      if (uid === 'demo-viewer' && q.op !== 'select') return err('حساب للقراءة فقط — لا توجد صلاحية تعديل');
+      if (q.op === 'select') {
+        out = t.filter(match);
+        if (uid === 'demo-staff' && TX.includes(table)) out = out.filter(r => r.created_by === uid);
+        if (uid === 'demo-staff' && (table === 'treasury_months' || table === 'pending_items')) out = [];
+        if (q.ord) out = out.slice().sort((a, b) => (a[q.ord[0]] > b[q.ord[0]] ? 1 : a[q.ord[0]] < b[q.ord[0]] ? -1 : 0) * q.ord[1]);
+        if (q.rng) out = out.slice(q.rng[0], q.rng[1] + 1); if (q.lim) out = out.slice(0, q.lim);
+        out = clone(out);
+      } else if (q.op === 'insert' || q.op === 'upsert') {
+        for (let p of (Array.isArray(q.payload) ? q.payload : [q.payload])) {
+          p = clone(p); const key = q.on || (table === 'customers' || table === 'publishers' ? 'name' : pk);
+          const ex = (q.op === 'upsert' || pk !== 'id') ? t.find(r => r[key] === p[key]) : null;
+          if (q.op === 'insert' && (table === 'customers' || table === 'publishers') && t.some(r => r.name === p.name)) return err('الاسم موجود مسبقاً');
+          if (q.op === 'insert' && pk !== 'id' && ex) return err('السجل موجود مسبقاً');
+          if (ex) { Object.assign(ex, p); out.push(ex); audit(table, 'UPDATE', ex); continue; }
+          if (pk === 'id') p.id = t.reduce((m, r) => Math.max(m, r.id || 0), 0) + 1;
+          if (TX.includes(table)) { p.created_by = uid; p.created_at = new Date().toISOString(); }
+          if ((table === 'sales' || table === 'purchases' || table === 'expenses') && p.pay_method === undefined) p.pay_method = table === 'expenses' ? 'نقدى' : '';
+          if (table === 'sales') { if (p.inv_type === undefined) p.inv_type = 'اجل'; if (p.is_pending === undefined) p.is_pending = false; if (!p.invoice_no && num(p.invoice_value)) p.invoice_no = String(Math.max(0, ...t.map(r => /^\d{1,9}$/.test(r.invoice_no || '') ? +r.invoice_no : 0)) + 1); }
+          if (table === 'pending_items' && p.sale_id === undefined) p.sale_id = null;
+          if (table === 'sales' && !p.period) p.period = String(p.sale_date).slice(0, 7);
+          if (table === 'purchases' && !p.period) p.period = String(p.purchase_date).slice(0, 7);
+          if (table === 'expenses' && !p.period) p.period = String(p.expense_date).slice(0, 7);
+          if (table === 'customers') { p.show_in_balances = p.show_in_balances !== false; p.credit_limit = p.credit_limit == null ? null : p.credit_limit; p.type = p.type || 'اجل'; }
+          if (table === 'publishers') p.show_in_balances = p.show_in_balances !== false;
+          if (table === 'treasury_months') ['cash_box', 'drawer', 'post', 'bank'].forEach(k => { if (p[k] == null) p[k] = 0; });
+          if (table === 'treasury_months' && p.opening_override === undefined) p.opening_override = null;
+          t.push(p); out.push(p); audit(table, 'INSERT', p);
+        }
+      } else if (q.op === 'update') { out = t.filter(match); out.forEach(r => { Object.assign(r, q.payload); audit(table, 'UPDATE', r); }); }
+      else if (q.op === 'delete') {
+        const del = t.filter(match); if (del.some(r => used(table, r.id))) return err('الحساب مرتبط بحركات');
+        D[table] = t.filter(r => !del.includes(r)); out = del; if (table === 'sales') D.pending_items = D.pending_items.filter(x => !del.some(d => d.id === x.sale_id)); del.forEach(r => audit(table, 'DELETE', r));
+        if (table === 'treasury_months') D.pending_items = D.pending_items.filter(x => D.treasury_months.some(m => m.month === x.month));
+      }
+      if (q.op !== 'select') save();
+      return { data: q.one ? (out[0] || null) : out, error: null };
+    }
+    return api;
+  }
+  return {
+    auth: { getSession: async () => ({ data: { session: { user: { id: uid } } } }), signOut: async () => { lsSet('mode', ''); return {}; } },
+    from: qb, rpc(name) { const D = db(); const mx = Math.max(0, ...D.sales.map(r => /^\d{1,9}$/.test(r.invoice_no || '') ? +r.invoice_no : 0)); return Promise.resolve({ data: name === 'next_invoice_no' ? mx + 1 : null, error: null }); }, channel() { const c = { on() { return c; }, subscribe() { return c; } }; return c; },
+    __wipe() { mem = fresh(); save(); },
+    __sample() {
+      const D = db(); if (D.sales.length || D.customers.length) return false;
+      const add = (t, rows) => rows.forEach(r => { const row = { ...r }; if (!('id' in row) && pkOf(t) === 'id') row.id = D[t].length + 1; if (TX.includes(t)) { row.created_by = 'demo-admin'; row.created_at = new Date().toISOString(); } D[t].push(row); });
+      add('customers', [['مكتبة النور', 'اجل', 50000], ['مكتبة الأمل', 'اجل', 20000], ['دار المعرفة', 'اجل', 80000], ['نقدا', 'نقدى', null]].map(([name, type, lim]) => ({ name, type, credit_limit: lim, show_in_balances: true })));
+      add('publishers', ['الطلبة', 'نهضة مصر', 'الدولية'].map(name => ({ name, show_in_balances: true })));
+      const sale = (n, c, v, com, pay, d) => ({ invoice_no: String(n), customer_id: c, invoice_value: v, commission: com, credit: c === 4 ? 0 : v - com, payments: pay, sale_date: '2026-10-' + d, term: 'الاول', period: '2026-10', source: 'demo' });
+      add('sales', [sale(1, 1, 30000, 1500, 0, '03'), sale(2, 2, 12000, 600, 5000, '04'), sale(3, 3, 45000, 2250, 20000, '05'), sale(4, 4, 1800, 0, 0, '05'), sale(5, 1, 0, 0, 20000, '12'), sale(6, 2, 9000, 450, 0, '15'), sale(7, 3, 22000, 1100, 0, '20')]);
+      add('purchases', [[1, 0, 40000, 0, '02'], [2, 0, 25000, 10000, '06'], [3, 3000, 0, 0, '09'], [1, 0, 0, 15000, '18']].map(([p, cash, cr, pay, d]) => ({ publisher_id: p, cash_purchases: cash, credit_purchases: cr, payments: pay, purchase_date: '2026-10-' + d, term: 'الاول', period: '2026-10', source: 'demo' })));
+      add('expenses', [['شحن', 350, 'شحن طلبية', '03'], ['نقل', 200, 'نقل بضاعة', '05'], ['اكرامية', 50, 'اكرامية عمال', '08'], ['مرتبات', 4000, 'مرتب موظف', '25']].map(([category, amount, description, d]) => ({ category, amount, description, expense_date: '2026-10-' + d, period: '2026-10' })));
+      add('customer_returns', [{ customer_id: 1, term: 'الاول', amount: 1200, return_date: '2026-10-10', note: 'مرتجع تجريبي' }]);
+      add('publisher_returns', [{ publisher_id: 1, term: 'الاول', amount: 800, return_date: '2026-10-11', note: 'مرتجع تجريبي' }]);
+      const m0 = D.treasury_months.find(m => m.month === '2026-07'); m0.opening_override = 100000;
+      const m10 = D.treasury_months.find(m => m.month === '2026-10'); Object.assign(m10, { cash_box: 5000, drawer: 2000, post: 20000, bank: 10000 });
+      D.pending_items.push({ id: 1, month: '2026-10', label: 'فاتورة نقدى لم تسدد (تجريبي)', kind: 'فاتورة نقدى لم تسدد', amount: 1500, carry: true, settled: false, settled_month: null });
+      D.sales[4].pay_method = 'بنك'; D.sales[1].pay_method = 'بريد'; D.purchases[3].pay_method = 'بنك'; D.sales.forEach(r => { r.inv_type = r.customer_id === 4 ? 'نقدى' : 'اجل'; r.is_pending = false; const need = num(r.payments) > 0 || (r.inv_type === 'نقدى' && num(r.invoice_value) > 0); r.pay_method = need ? (r.pay_method || 'نقدى') : ''; }); D.purchases.forEach(r => { r.pay_method = (num(r.payments) > 0 || num(r.cash_purchases) > 0) ? (r.pay_method || 'نقدى') : ''; }); D.expenses.forEach(r => { r.pay_method = 'نقدى'; });
+      D.adjustments = D.adjustments || []; D.adjustments.push({ id: 1, kind: 'c', customer_id: 1, publisher_id: null, direction: 'drawn', amount: 500, adj_date: '2026-10-14', term: 'الاول', note: 'عمولة تجريبية', created_by: 'demo-admin', created_at: new Date().toISOString() });
+      save(); return true;
+    }
+  };
+}
+
+/* ============================ الدخول والإعداد ============================ */
+function welcomeScreen() {
+  $('#app').innerHTML = `<div class="center"><div class="box" style="max-width:470px"><div class="logo">📚</div><h1>نظام محاسبة المكتبة</h1><p>اختر طريقة التشغيل</p>
+   <button class="btn" id="wDemo" style="width:100%;padding:14px">🧪 تجربة فورية (بدون أي إعداد)</button>
+   <p class="mut" style="margin:6px 0 16px;font-size:13px">قاعدة فارغة بنفس هيكل ملف Excel، محفوظة داخل متصفحك فقط. مناسبة للاختبار قبل التشغيل الفعلي، ويمكنك تبديل الدور بين مدير وموظف وقراءة فقط.</p>
+   <button class="btn gh" id="wCloud" style="width:100%;padding:14px">☁️ الاتصال بـ Supabase (التشغيل السحابي)</button></div></div>`;
+  $('#wDemo').onclick = () => { lsSet('mode', 'demo'); location.reload(); };
+  $('#wCloud').onclick = setupScreen;
+}
+function setupScreen() {
+  $('#app').innerHTML = `<div class="center"><div class="box"><div class="logo">⚙️</div><h1>إعداد الاتصال</h1><p>أدخل بيانات مشروع Supabase (Project Settings ▸ API)</p><label class="l">Project URL</label><input id="u" dir="ltr" placeholder="https://xxxx.supabase.co"><div class="sp"></div><label class="l">anon public key</label><input id="k" dir="ltr"><div class="sp"></div><button class="btn" id="go" style="width:100%">حفظ ومتابعة</button></div></div>`;
+  $('#go').onclick = () => { const u = $('#u').value.trim(), k = $('#k').value.trim(); if (!/^https:\/\/.+/.test(u) || k.length < 20) return toast('بيانات غير صحيحة', 1); lsSet('sb_url', u); lsSet('sb_key', k); location.reload(); };
+}
+function loginScreen() {
+  $('#app').innerHTML = `<div class="center"><form class="box" id="lf">${lsGet('logo_cache', '') ? `<img src="${lsGet('logo_cache', '')}" alt="" style="height:64px;max-width:100%;object-fit:contain;margin-bottom:12px">` : '<div class="logo">📚</div>'}<h1>نظام محاسبة المكتبة</h1><p>سجّل الدخول للمتابعة</p><label class="l">البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="username" required><div class="sp"></div><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr" autocomplete="current-password" required><div class="sp"></div><button class="btn" id="lb" style="width:100%">دخول</button></form></div>`;
+  $('#lf').onsubmit = async ev => { ev.preventDefault(); const b = $('#lb'); b.disabled = true; const { error } = await sb.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value }); b.disabled = false; if (error) return toast(error.message === 'Invalid login credentials' ? 'البريد أو كلمة المرور غير صحيحة' : error.message, 1); boot(); };
+}
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return loginScreen();
+  const { data: prof, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+  if (error || !prof) { $('#app').innerHTML = `<div class="center"><div class="box"><h1>لا يوجد ملف مستخدم</h1><p>تأكد من تشغيل ملف schema.sql ثم أعد الدخول.</p><button class="btn" id="o2">خروج</button></div></div>`; $('#o2').onclick = async () => { await sb.auth.signOut(); location.reload(); }; return; }
+  if (!prof.active) { await sb.auth.signOut(); loginScreen(); return toast('هذا الحساب موقوف، تواصل مع المدير', 1); }
+  me = prof; try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); } catch (e) {} renderShell(); startRealtime();
+  window.addEventListener('hashchange', route); route();
+}
+document.documentElement.dataset.theme = (['soft', 'sepia', 'dark', 'light'].includes(lsGet('theme', 'soft')) ? lsGet('theme', 'soft') : 'soft');
+(function init() {
+  if (!PRODUCTION && lsGet('mode', '') === 'demo') { DEMO = true; sb = makeLocalClient(lsGet('demo_role', 'admin')); boot(); return; }
+  const url = SUPABASE_URL || lsGet('sb_url', ''), key = SUPABASE_ANON_KEY || lsGet('sb_key', '');
+  if (!url || !key) return PRODUCTION ? setupScreen() : welcomeScreen();
+  if (!window.supabase) { $('#app').innerHTML = '<div class="center"><div class="box"><h1>تعذّر تحميل مكتبة Supabase</h1><p>تأكد من الاتصال بالإنترنت ثم أعد التحميل.</p>' + (PRODUCTION ? '' : '<button class="btn" id="wd">🧪 فتح الوضع التجريبي</button>') + '</div></div>'; if ($('#wd')) $('#wd').onclick = () => { lsSet('mode', 'demo'); location.reload(); }; return; }
+  sb = window.supabase.createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true } });
+  boot();
+})();</script>
+</body>
+</html>
