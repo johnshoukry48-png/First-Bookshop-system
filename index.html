@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>First-Bookshop</title>
-<link rel="icon" type="image/png" href="logo.PNG">
+<title>نظام محاسبة المكتبة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#e8edee;--card:#f6f8f7;--tx:#26333b;--mu:#64737c;--bd:#d2dcdf;--ac:#3f7f9e;--ac2:#2f6682;--ok:#3d8b5f;--er:#c0504d;--wa:#b9802f;--side:#27373f;--sidetx:#d3dee2;--inp:#fbfcfb;--hd:#e2eaec;--sh:0 4px 18px rgba(30,50,60,.07)}
 [data-theme=light]{--bg:#f3f5fa;--card:#fff;--tx:#162033;--mu:#6b7690;--bd:#e3e8f2;--ac:#2f5bea;--ac2:#1d3fb8;--ok:#16a34a;--er:#dc2626;--wa:#d97706;--side:#0f1b3d;--sidetx:#cdd6f0;--inp:#fff;--hd:#f0f3fa;--sh:0 6px 24px rgba(20,35,80,.08)}
@@ -122,6 +122,12 @@ function dl(name, text, type = 'text/csv;charset=utf-8') { const a = document.cr
 const THEMES = ['soft', 'sepia', 'dark', 'light'], TN = { soft: 'هادئ', sepia: 'ورقي دافئ', dark: 'داكن', light: 'فاتح' };
 const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('theme', t); };
 const PMS = ['نقدى', 'بنك', 'بريد'];
+const appName = () => lsGet('name_cache', '') || 'نظام محاسبة المكتبة';
+function applyBrand() {
+  document.title = appName();
+  const lg = lsGet('logo_cache', ''); let l = document.querySelector('link[rel=icon]');
+  if (lg) { if (!l) { l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); } l.href = lg; }
+}
 const mv = v => { if (v == null || v === '' || isNaN(Number(v))) return ''; const n = Number(v); const [a, b] = String(Math.abs(n)).split('.'); return (n < 0 ? '-' : '') + a.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (b ? '.' + b.slice(0, 2) : ''); };
 /* حقول المبالغ: فواصل الآلاف أثناء الكتابة */
 document.addEventListener('input', e => {
@@ -137,6 +143,11 @@ document.addEventListener('input', e => {
     h.textContent = name && !list.some(x => norm(x.name) === norm(name)) ? '➕ ' + (t.dataset.ref === 'customers' ? 'عميل' : 'ناشر') + ' جديد — سيُضاف تلقائياً عند الحفظ' : '';
   }
 });
+function sortSales(rows) {   // الفواتير بالرقم تصاعدياً، والدفعة (بلا فاتورة) تأتي بعد آخر فاتورة كانت موجودة وقت تسجيلها
+  const all = (S.data.sales || []).slice().sort((a, b) => a.id - b.id), key = new Map(); let mx = 0;
+  all.forEach(r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(), m = /^\d{4}-\d{2}-\d{2}$/.test(x) ? null : x.match(/^\d+/); if (m) { mx = Math.max(mx, +m[0]); key.set(r.id, [+m[0], 0]); } else key.set(r.id, [mx, 1]); });
+  return rows.sort((a, b) => { const x = key.get(a.id) || [0, 1], y = key.get(b.id) || [0, 1]; return x[0] - y[0] || x[1] - y[1] || a.id - b.id; });
+}
 const invKey = r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(x)) return [2, 0, x]; const m = x.match(/^\d+/); return m ? [0, +m[0], x] : [1, 0, x]; };
 const invCmp = (a, b) => { const x = invKey(a), y = invKey(b); return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], 'en', { numeric: true }) || a.id - b.id; };
 async function nextInv() {
@@ -167,7 +178,12 @@ const TABLES = { customers: 'name', publishers: 'name', sales: 'id', purchases: 
 async function fetchAll(table) {
   let out = [], from = 0;
   for (;;) {
-    const { data, error } = await sb.from(table).select('*').order(TABLES[table] === 'name' ? 'id' : TABLES[table], { ascending: true }).range(from, from + 999);
+    let res;
+    for (let a = 0; a < 3; a++) {   // إعادة المحاولة عند انقطاع الشبكة اللحظي (Failed to fetch)
+      try { res = await sb.from(table).select('*').order(TABLES[table] === 'name' ? 'id' : TABLES[table], { ascending: true }).range(from, from + 999); if (!res.error) break; } catch (e) { res = { error: e }; }
+      await new Promise(r => setTimeout(r, 500 * (a + 1)));
+    }
+    const { data, error } = res;
     if (error) throw error; out = out.concat(data); if (data.length < 1000) break; from += 1000;
   }
   return out;
@@ -422,7 +438,7 @@ async function pageGrid(ent) {
      ${e.per ? `<div class="fit"><label class="l">الشهر</label><select id="fper"><option value="">الكل</option>${[...new Set(S.data[ent].map(r => r.period))].filter(Boolean).sort().map(p => `<option value="${p}" ${gs.per === p ? 'selected' : ''}>${monthLabel(p)}</option>`).join('')}</select></div>` : ''}
      ${e.term ? `<div class="fit"><label class="l">الترم</label><select id="fterm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` : ''}
      ${e.ref ? `<div><label class="l">${e.refLabel}</label><input id="fref" list="fref_dl" value="${esc(gs.ref)}" placeholder="الكل"><datalist id="fref_dl">${S.data[e.ref].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>` : ''}
-     ${e.fields.some(f => f[0] === 'pay_method') ? `<div class="fit"><label class="l">طريقة الدفع</label><select id="fpm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}${ent === 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="inv" ${gs.sort === 'inv' ? 'selected' : ''}>رقم الفاتورة (الأصغر ← الأكبر)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>الأحدث أولاً</option></select></div>` : ''}<div class="fit"><button class="btn gh" id="fcsv">⬇️ CSV</button> <button class="btn gh" id="fprint">🖨️ طباعة</button></div></div>
+     ${e.fields.some(f => f[0] === 'pay_method') ? `<div class="fit"><label class="l">طريقة الدفع</label><select id="fpm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}${ent === 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="inv" ${gs.sort === 'inv' ? 'selected' : ''}>رقم الفاتورة (الأصغر ← الأكبر)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>التاريخ (الأقدم ← الأحدث)</option></select></div>` : ''}<div class="fit"><button class="btn gh" id="fcsv">⬇️ CSV</button> <button class="btn gh" id="fprint">🖨️ طباعة</button></div></div>
      <div class="sp"></div><div id="gridbox"></div></div>`;
   wireForm(ent, 'nf');
   const draw = () => {
@@ -432,30 +448,29 @@ async function pageGrid(ent) {
     if (gs.pm) rows = rows.filter(r => (r.pay_method || 'نقدى') === gs.pm);
     if (gs.ref) rows = rows.filter(r => norm(refName(ent, r)).includes(norm(gs.ref)));
     if (gs.q) { const q = norm(gs.q); rows = rows.filter(r => e.cols.some(k => norm(String(cellVal(ent, r, k) ?? '')).includes(q))); }
-    const asc = ent === 'sales' && gs.sort === 'inv';
-    if (asc) rows.sort(invCmp); else rows.sort((a, b) => String(b[e.dateKey]).localeCompare(String(a[e.dateKey])) || b.id - a.id);
-    const shown = asc ? rows.slice(-gs.limit) : rows.slice(0, gs.limit);
+    if (ent === 'sales' && gs.sort === 'inv') sortSales(rows); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id);
+    const shown = rows.slice(-gs.limit);
     const canEdit = r => canWrite() && (admin || (r.created_by === me.id && Date.now() - new Date(r.created_at).getTime() < 864e5));
     $('#gridbox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد السجلات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr><th>#</th>${e.cols.map(k => `<th class="${isNum(k) ? 'n' : ''}">${LAB[k]}</th>`).join('')}${e.per && admin ? '<th>الشهر</th>' : ''}<th class="noprint"></th></tr></thead><tbody>
       ${shown.map((r, i) => `<tr data-id="${r.id}"><td class="mut num">${i + 1}</td>${e.cols.map(k => { const v = cellVal(ent, r, k); return isNum(k) ? `<td class="n">${fmt(v)}</td>` : `<td>${esc(v)}</td>`; }).join('')}${e.per && admin ? `<td class="mut">${esc(monthLabel(r.period))}</td>` : ''}<td class="noprint">${canEdit(r) ? `<button class="btn gh sm" data-ed="${r.id}">✏️</button> <button class="btn gh sm" data-del="${r.id}">🗑️</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="20" class="mut" style="text-align:center;padding:24px">لا توجد سجلات</td></tr>`}</tbody>
       ${admin || true ? `<tfoot><tr><td>الإجمالي</td>${e.cols.map(k => e.sums.includes(k) ? `<td class="n">${fmt(sum(rows, r => r[k]))}</td>` : '<td></td>').join('')}${e.per && admin ? '<td></td>' : ''}<td></td></tr></tfoot>` : ''}</table></div>
-      ${rows.length > shown.length ? `<div style="text-align:center;margin-top:10px"><button class="btn gh" id="more">عرض المزيد (${rows.length - shown.length})</button></div>` : ''}`;
+      ${rows.length > shown.length ? `<div style="text-align:center;margin-top:10px"><button class="btn gh" id="more">عرض الأقدم (${rows.length - shown.length})</button></div>` : ''}`;
     $('#more') && ($('#more').onclick = () => { gs.limit += 400; draw(); });
     $$('[data-del]', el).forEach(b => b.onclick = async () => { if (!confirm('حذف هذا السجل نهائياً؟')) return; const { error } = await sb.from(e.table).delete().eq('id', +b.dataset.del); if (error) return toast(error.message, 1); invalidate(ent); await load(ent); draw(); toast('تم الحذف'); });
     $$('[data-ed]', el).forEach(b => b.onclick = () => editModal(ent, S.data[ent].find(x => x.id === +b.dataset.ed), () => { invalidate(ent); load(ent).then(draw); }));
   };
-  draw();
+  draw(); { const tw0 = $('#gridbox .tw'); if (tw0) tw0.scrollTop = tw0.scrollHeight; }
   $('#nfAdd').onclick = async () => {
-    const btn = $('#nfAdd'); btn.disabled = true;
+    const btn = $('#nfAdd'); btn.disabled = true; let saved = false;
     try {
-      const rec = await readForm(ent, 'nf'); const { data, error } = await sb.from(e.table).insert(rec).select().single(); if (error) throw error;
+      const rec = await readForm(ent, 'nf'); const { data, error } = await sb.from(e.table).insert(rec).select().single(); if (error) throw error; saved = true;
       if (ent === 'sales' && data.is_pending) await createPending(data);
-      S.data[ent].push(data); toast('تم الحفظ ✔'); await load('customers', 'publishers');
+      if (S.data[ent]) S.data[ent].push(data); else await load(ent); toast('تم الحفظ ✔'); await load('customers', 'publishers');
       ['invoice_no', 'invoice_value', 'commission', 'credit', 'payments', 'cash_purchases', 'credit_purchases', 'amount', 'description', 'note'].forEach(k => { const x = $('#nf_' + k); if (x) x.value = ''; });
       const rf = $('#nf_' + (e.refKey || '')); if (rf) { rf.value = ''; rf.focus(); const h = rf.parentElement.querySelector('.newh'); if (h) h.textContent = ''; }
       if (ent === 'sales') { S.nextInvNo = await nextInv(); $('#nf_invoice_no').value = S.nextInvNo; $('#nf_invoice_value').dispatchEvent(new Event('input')); }
-      draw(); const tw = $('#gridbox .tw'); if (tw && ent === 'sales' && gs.sort === 'inv') tw.scrollTop = tw.scrollHeight;
-    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+      draw(); const tw = $('#gridbox .tw'); if (tw) tw.scrollTop = tw.scrollHeight;
+    } catch (err) { if (saved) { console.warn('post-save step failed', err); toast('تم الحفظ ✔ (تعذّر تحديث الشاشة تلقائياً، حدّث الصفحة إن لزم)'); } else if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
   };
   $('#nf').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('#nfAdd').click(); } });
   const bind = (id, k) => { const x = $('#' + id); if (x) x.oninput = x.onchange = () => { gs[k] = x.value; gs.limit = 200; draw(); }; };
@@ -550,7 +565,7 @@ const gridPrintCfg = ent => {
     cols: [...e.cols.map(k => ({ k, l: LAB[k], t: isNum(k) ? 'm' : 't', sum: e.sums.includes(k) })), ...(e.per ? [{ k: 'period', l: 'الشهر', t: 't', off: true }] : [])],
     build(o) {
       let rows = S.data[ent].filter(r => dOk(r[e.dateKey], o) && (!o.term || r.term === o.term) && (!o.ref || norm(refName(ent, r)).includes(norm(o.ref))) && (ent !== 'sales' || invOk(r.invoice_no, o)));
-      if (ent === 'sales') rows.sort(invCmp); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
+      if (ent === 'sales') sortSales(rows); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
       return { rows: rows.map(r => ({ ...Object.fromEntries(e.cols.map(k => [k, cellVal(ent, r, k)])), period: monthLabel(r.period) })) };
     } };
 };
@@ -741,26 +756,26 @@ async function pagePayments(kind) {
    <div class="card"><div class="tabs noprint"><button data-tab="det" class="${gs.tab === 'det' ? 'on' : ''}">التفصيلي</button><button data-tab="sum" class="${gs.tab === 'sum' ? 'on' : ''}">ملخص لكل ${isC ? 'عميل' : 'ناشر'}</button></div>
      <div class="row noprint"><div><label class="l">بحث</label><input id="pq" value="${esc(gs.q)}" placeholder="الاسم${isC ? ' أو رقم الإيصال' : ''}"></div><div class="fit"><label class="l">من</label><input type="date" id="pfr" value="${esc(gs.from)}"></div><div class="fit"><label class="l">إلى</label><input type="date" id="pto" value="${esc(gs.to)}"></div><div class="fit"><label class="l">الترم</label><select id="ptm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="fit"><label class="l">طريقة الدفع</label><select id="ppm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div><div class="fit"><button class="btn gh" id="pcsv">⬇️ CSV</button> <button class="btn gh" id="pprint">🖨️ طباعة</button></div></div><div class="sp"></div><div id="paybox"></div></div>`;
   const draw = () => {
-    const rows = filtered().sort((a, b) => String(b[dk]).localeCompare(String(a[dk])) || b.id - a.id), total = sum(rows, r => r.payments);
+    const rows = filtered().sort((a, b) => String(a[dk]).localeCompare(String(b[dk])) || a.id - b.id), total = sum(rows, r => r.payments);
     const canEdit = r => canWrite() && (admin || (r.created_by === me.id && Date.now() - new Date(r.created_at).getTime() < 864e5));
     if (gs.tab === 'sum') { const sm = summary(rows); $('#paybox').innerHTML = `<div class="tw"><table><thead><tr><th>#</th><th>${isC ? 'العميل' : 'الناشر'}</th><th class="n">عدد الدفعات</th><th class="n">إجمالي المدفوع</th><th class="n">نقدى</th><th class="n">بنك</th><th class="n">بريد</th><th>آخر دفعة</th></tr></thead><tbody>${sm.map((a, i) => `<tr><td class="mut num">${i + 1}</td><td>${esc(a.name)}</td><td class="n">${a.count}</td><td class="n">${fmt(a.total)}</td><td class="n">${fmt(a['نقدى'])}</td><td class="n">${fmt(a['بنك'])}</td><td class="n">${fmt(a['بريد'])}</td><td class="num">${a.last}</td></tr>`).join('') || '<tr><td colspan="8" class="mut" style="text-align:center;padding:20px">لا توجد دفعات</td></tr>'}</tbody><tfoot><tr><td></td><td>الإجمالي</td><td class="n">${rows.length}</td><td class="n">${fmt(total)}</td>${PMS.map(x => `<td class="n">${fmt(sum(sm, a => a[x]))}</td>`).join('')}<td></td></tr></tfoot></table></div>`; return; }
-    const shown = rows.slice(0, gs.limit);
+    const shown = rows.slice(-gs.limit);
     $('#paybox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد الدفعات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr><th>#</th><th>التاريخ</th>${isC ? '<th>رقم الإيصال</th>' : ''}<th>${isC ? 'العميل' : 'الناشر'}</th><th class="n">المبلغ</th><th>الترم</th><th>طريقة الدفع</th><th class="noprint"></th></tr></thead><tbody>${shown.map((r, i) => `<tr><td class="mut num">${i + 1}</td><td class="num">${r[dk]}</td>${isC ? `<td>${esc(r.invoice_no)}</td>` : ''}<td>${esc(nameOf(r))}</td><td class="n">${fmt(r.payments)}</td><td>${r.term}</td><td><span class="pill pm-${esc(r.pay_method || 'نقدى')}">${esc(r.pay_method || 'نقدى')}</span></td><td class="noprint">${canEdit(r) ? `<button class="btn gh sm" data-ed="${r.id}">✏️</button> <button class="btn gh sm" data-del="${r.id}">🗑️</button>` : ''}</td></tr>`).join('') || `<tr><td colspan="8" class="mut" style="text-align:center;padding:20px">لا توجد دفعات</td></tr>`}</tbody><tfoot><tr><td></td><td>الإجمالي</td>${isC ? '<td></td>' : ''}<td></td><td class="n">${fmt(total)}</td><td></td><td></td><td class="noprint"></td></tr></tfoot></table></div>${rows.length > shown.length ? '<div style="text-align:center;margin-top:10px"><button class="btn gh" id="pmore">عرض المزيد</button></div>' : ''}`;
     $('#pmore') && ($('#pmore').onclick = () => { gs.limit += 400; draw(); });
     $$('[data-del]', $('#paybox')).forEach(b => b.onclick = async () => { if (!confirm('حذف هذه الدفعة نهائياً؟')) return; const { error } = await sb.from(tbl).delete().eq('id', +b.dataset.del); if (error) return toast(error.message, 1); invalidate(tbl); await load(tbl); draw(); });
     $$('[data-ed]', $('#paybox')).forEach(b => b.onclick = () => editModal(tbl, S.data[tbl].find(x => x.id === +b.dataset.ed), () => { invalidate(tbl); load(tbl).then(draw); }));
   };
-  draw();
+  draw(); { const tw0 = $('#paybox .tw'); if (tw0) tw0.scrollTop = tw0.scrollHeight; }
   $('#pfAdd').onclick = async () => {
-    const btn = $('#pfAdd'); btn.disabled = true;
+    const btn = $('#pfAdd'); btn.disabled = true; let saved = false;
     try {
       const amt = r2(num($('#pf_a').value)); if (!(amt > 0)) throw new Error('أدخل مبلغاً صحيحاً'); if (!$('#pf_d').value) throw new Error('التاريخ مطلوب');
       const id = await resolveRef(tbl, $('#pf_n').value);
       const rec = isC ? { invoice_no: $('#pf_r').value.trim() || $('#pf_d').value, inv_type: 'اجل', is_pending: false, customer_id: id, invoice_value: 0, commission: 0, credit: 0, payments: amt, pay_method: $('#pf_m').value, sale_date: $('#pf_d').value, term: $('#pf_t').value }
         : { publisher_id: id, cash_purchases: 0, credit_purchases: 0, payments: amt, pay_method: $('#pf_m').value, purchase_date: $('#pf_d').value, term: $('#pf_t').value };
-      const { data, error } = await sb.from(tbl).insert(rec).select().single(); if (error) throw error;
-      S.data[tbl].push(data); await load('customers', 'publishers'); toast('تم حفظ الدفعة ✔'); $('#pf_a').value = ''; if ($('#pf_r')) $('#pf_r').value = ''; $('#pf_n').value = ''; $('#pf_n').focus(); draw();
-    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+      const { data, error } = await sb.from(tbl).insert(rec).select().single(); if (error) throw error; saved = true;
+      if (S.data[tbl]) S.data[tbl].push(data); else await load(tbl); await load('customers', 'publishers'); toast('تم حفظ الدفعة ✔'); $('#pf_a').value = ''; if ($('#pf_r')) $('#pf_r').value = ''; $('#pf_n').value = ''; $('#pf_n').focus(); draw(); { const tw = $('#paybox .tw'); if (tw) tw.scrollTop = tw.scrollHeight; }
+    } catch (err) { if (saved) { console.warn('post-save step failed', err); toast('تم الحفظ ✔ (تعذّر تحديث الشاشة تلقائياً، حدّث الصفحة إن لزم)'); } else if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
   };
   $('#pf').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); $('#pfAdd').click(); } });
   const bind = (id, k) => { const x = $('#' + id); x.oninput = x.onchange = () => { gs[k] = x.value; gs.limit = 200; draw(); }; };
@@ -804,7 +819,7 @@ async function pageSettings() {
   const st = settings();
   $('#page').innerHTML = `<div class="grid g2"><div class="card"><h3>الإعدادات العامة</h3><div class="grid g2"><div><label class="l">الترم الحالي (افتراضي الإدخال)</label><select id="s1">${TERMS.map(t => `<option ${st.current_term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="l">نسبة تنبيه الحد الائتماني</label><input class="num" id="s2" value="${esc(st.credit_alert_ratio || '0.9')}"></div><div style="grid-column:1/-1"><label class="l">أساس التنبيه</label><select id="s3"><option value="payments" ${st.credit_alert_basis !== 'balance' ? 'selected' : ''}>المدفوعات ≥ نسبة × الحد (كما في Excel بالضبط)</option><option value="balance" ${st.credit_alert_basis === 'balance' ? 'selected' : ''}>الصافي المستحق ≥ نسبة × الحد (مقترح)</option></select></div></div><div class="sp"></div><button class="btn" id="sS">💾 حفظ</button></div>
    <div class="card"><h3>نسخة احتياطية</h3><p class="mut">تنزيل كل البيانات كملف JSON.</p><button class="btn gh" id="bk">⬇️ تنزيل نسخة احتياطية</button></div></div>
-   <div class="card"><h3>🎨 المظهر وهوية المكان والطباعة</h3><div class="grid g2"><div><label class="l">اسم المكان (يظهر في القائمة والطباعة)</label><input id="s_name" value="${esc(st.store_name || '')}" placeholder="First - Bookstore"></div><div><label class="l">المظهر (ألوان مريحة للعين)</label><select id="s_theme">${THEMES.map(t => `<option value="${t}" ${document.documentElement.dataset.theme === t ? 'selected' : ''}>${TN[t]}</option>`).join('')}</select></div>
+   <div class="card"><h3>🎨 المظهر وهوية المكان والطباعة</h3><div class="grid g2"><div><label class="l">اسم النظام / المكان (يظهر في القائمة وشاشة الدخول وعنوان الصفحة والطباعة)</label><input id="s_name" value="${esc(st.store_name || '')}" placeholder="First - Bookstore"></div><div><label class="l">المظهر (ألوان مريحة للعين)</label><select id="s_theme">${THEMES.map(t => `<option value="${t}" ${document.documentElement.dataset.theme === t ? 'selected' : ''}>${TN[t]}</option>`).join('')}</select></div>
    <div><label class="l">اللوجو</label><div style="display:flex;gap:10px;align-items:center"><img id="logoPrev" src="${esc(st.logo || '')}" style="height:48px;max-width:120px;object-fit:contain;${st.logo ? '' : 'display:none'}"><input type="file" id="logoF" accept="image/*"><button class="btn gh sm" id="logoX">إزالة</button></div></div>
    <div><label class="l">صورة الطابع / الختم (اختياري)</label><div style="display:flex;gap:10px;align-items:center"><img id="stampPrev" src="${esc(st.stamp_img || '')}" style="height:48px;max-width:120px;object-fit:contain;${st.stamp_img ? '' : 'display:none'}"><input type="file" id="stampF" accept="image/*"><button class="btn gh sm" id="stampX">إزالة</button></div></div>
    <div><label class="l">نص الطابع (يظهر إن لم تُرفع صورة)</label><input id="s_stxt" value="${esc(st.stamp_text || '')}" placeholder="مثال: مكتبة فيرست — الإدارة"></div><div><label class="l">نص التذييل (عنوان / هاتف ...)</label><textarea id="s_foot" rows="2">${esc(st.footer_text || '')}</textarea></div></div><div class="sp"></div><button class="btn" id="sId">💾 حفظ الهوية</button> <span class="mut" style="font-size:12px">الطابع والتذييل يظهران أسفل كل صفحة مطبوعة (ويمكن إيقافهما من نافذة الطباعة).</span></div>
@@ -828,7 +843,7 @@ async function pageSettings() {
     const rows = [{ key: 'store_name', value: $('#s_name').value.trim() }, { key: 'stamp_text', value: $('#s_stxt').value.trim() }, { key: 'footer_text', value: $('#s_foot').value.trim() }];
     if (nLogo !== undefined) rows.push({ key: 'logo', value: nLogo }); if (nStamp !== undefined) rows.push({ key: 'stamp_img', value: nStamp });
     const { error } = await sb.from('app_settings').upsert(rows); if (error) return toast(error.message, 1);
-    invalidate('app_settings'); await load('app_settings'); lsSet('logo_cache', settings().logo || ''); toast('تم حفظ الهوية ✔'); renderShell(); route();
+    invalidate('app_settings'); await load('app_settings'); lsSet('logo_cache', settings().logo || ''); lsSet('name_cache', settings().store_name || ''); applyBrand(); toast('تم حفظ الهوية ✔'); renderShell(); route();
   };
 }
 async function runImport(files) {
@@ -862,7 +877,7 @@ async function pageAdjustments() {
   const DIR = { paid: 'تضاف على المدفوع', drawn: 'تضاف على المسحوب' };
   const nameOf = r => ((S.data[r.kind === 'c' ? 'customers' : 'publishers'].find(x => x.id === (r.kind === 'c' ? r.customer_id : r.publisher_id))) || {}).name || '';
   const list = () => S.data.adjustments.filter(r => r.kind === gs.tab && dOk(r.adj_date, gs) && (!gs.term || r.term === gs.term) && (!gs.q || norm(nameOf(r) + ' ' + (r.note || '')).includes(norm(gs.q))))
-    .sort((a, b) => String(b.adj_date).localeCompare(String(a.adj_date)) || b.id - a.id);
+    .sort((a, b) => String(a.adj_date).localeCompare(String(b.adj_date)) || a.id - b.id);
   $('#page').innerHTML = `<div class="note">هذه التسويات (عمولة أو أي مبلغ يُضاف على <b>المدفوع</b> أو على <b>المسحوب</b>) تؤثر فقط على <b>أرصدة وكشوف الحساب</b>، ولا تمر على الخزنة ولا تؤثر على الجرد أو العجز.</div>
    <div class="card"><div class="tabs"><button data-t="c" class="${isC ? 'on' : ''}">تسويات العملاء</button><button data-t="p" class="${!isC ? 'on' : ''}">تسويات الناشرين</button></div>
    <div class="wr"><div class="grid g4" id="af">
@@ -883,14 +898,14 @@ async function pageAdjustments() {
   const bind = (id, k) => { const x = $('#' + id); x.oninput = x.onchange = () => { gs[k] = x.value; draw(); }; };
   bind('aq', 'q'); bind('afr', 'from'); bind('ato', 'to'); bind('atm', 'term');
   $('#afAdd').onclick = async () => {
-    const btn = $('#afAdd'); btn.disabled = true;
+    const btn = $('#afAdd'); btn.disabled = true; let saved = false;
     try {
       const amt = r2(num($('#af_a').value)); if (!(amt > 0)) throw new Error('أدخل مبلغاً صحيحاً'); if (!$('#af_d').value) throw new Error('التاريخ مطلوب');
       const id = await resolveRef(isC ? 'adj_c' : 'adj_p', $('#af_n').value);
       const rec = { kind: gs.tab, customer_id: isC ? id : null, publisher_id: isC ? null : id, direction: $('#af_k').value, amount: amt, adj_date: $('#af_d').value, term: $('#af_t').value, note: $('#af_o').value.trim() };
-      const { data, error } = await sb.from('adjustments').insert(rec).select().single(); if (error) throw error;
-      S.data.adjustments.push(data); await load('customers', 'publishers'); toast('تم حفظ التسوية ✔ (لا تؤثر على الخزنة)'); $('#af_a').value = ''; $('#af_o').value = ''; $('#af_n').value = ''; $('#af_n').focus(); draw();
-    } catch (err) { if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
+      const { data, error } = await sb.from('adjustments').insert(rec).select().single(); if (error) throw error; saved = true;
+      if (S.data.adjustments) S.data.adjustments.push(data); else await load('adjustments'); await load('customers', 'publishers'); toast('تم حفظ التسوية ✔ (لا تؤثر على الخزنة)'); $('#af_a').value = ''; $('#af_o').value = ''; $('#af_n').value = ''; $('#af_n').focus(); draw();
+    } catch (err) { if (saved) { console.warn('post-save step failed', err); toast('تم الحفظ ✔ (تعذّر تحديث الشاشة تلقائياً، حدّث الصفحة إن لزم)'); } else if (err.message !== 'تم الإلغاء') toast(err.message, 1); } finally { btn.disabled = false; }
   };
   $('#aprint').onclick = () => printDialog({ key: 'adj' + gs.tab, title: isC ? 'تسويات العملاء' : 'تسويات الناشرين', filters: { date: true, term: true, ref: { label: isC ? 'العميل' : 'الناشر', list: S.data[isC ? 'customers' : 'publishers'] } },
     cols: [{ k: 'date', l: 'التاريخ', t: 't' }, { k: 'name', l: isC ? 'العميل' : 'الناشر', t: 't' }, { k: 'dir', l: 'النوع', t: 't' }, { k: 'amount', l: 'المبلغ', t: 'm', sum: true }, { k: 'term', l: 'الترم', t: 't' }, { k: 'note', l: 'ملاحظة', t: 't' }],
@@ -1076,9 +1091,15 @@ async function route() {
   try { if (name === 'home') await pageHome(); else await ROUTES.find(x => x[0] === name)[4](parts[1]); } catch (e) { $('#page').innerHTML = `<div class="card"><b class="neg">تعذّر التحميل:</b> ${esc(e.message)}</div>`; }
 }
 function startRealtime() {
+  const stale = new Set();
   sb.channel('rt').on('postgres_changes', { event: '*', schema: 'public' }, p => {
-    if (S.data[p.table]) S.data[p.table] = null;
-    clearTimeout(rtTimer); rtTimer = setTimeout(() => { const a = document.activeElement; if (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && $('#page').contains(a)) return; if (!document.querySelector('.modal')) route(); }, 1200);
+    if (S.data[p.table] !== undefined) stale.add(p.table);   // لا نُفرغ البيانات: نُحدّثها في الخلفية ثم نستبدلها دفعة واحدة
+    clearTimeout(rtTimer); rtTimer = setTimeout(async () => {
+      const ts = [...stale]; stale.clear();
+      for (const t of ts) { try { if (S.data[t]) S.data[t] = await fetchAll(t); } catch (e) { console.warn('refresh', t, e); } }
+      const a = document.activeElement; if (a && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && $('#page').contains(a)) return;
+      if (!document.querySelector('.modal')) route();
+    }, 1500);
   }).subscribe();
 }
 
@@ -1186,7 +1207,7 @@ function setupScreen() {
   $('#go').onclick = () => { const u = $('#u').value.trim(), k = $('#k').value.trim(); if (!/^https:\/\/.+/.test(u) || k.length < 20) return toast('بيانات غير صحيحة', 1); lsSet('sb_url', u); lsSet('sb_key', k); location.reload(); };
 }
 function loginScreen() {
-  $('#app').innerHTML = `<div class="center"><form class="box" id="lf"><img src="logo.PNG" alt="لوجو المكتبة" style="height:64px;max-width:100%;object-fit:contain;margin-bottom:12px"><h1>First-Bookshop</h1><p>سجّل الدخول للمتابعة</p><label class="l">البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="username" required><div class="sp"></div><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr" autocomplete="current-password" required><div class="sp"></div><button class="btn" id="lb" style="width:100%">دخول</button></form></div>`;
+  $('#app').innerHTML = `<div class="center"><form class="box" id="lf">${lsGet('logo_cache', '') ? `<img src="${lsGet('logo_cache', '')}" alt="" style="height:64px;max-width:100%;object-fit:contain;margin-bottom:12px">` : '<div class="logo">📚</div>'}<h1>${esc(appName())}</h1><p>سجّل الدخول للمتابعة</p><label class="l">البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="username" required><div class="sp"></div><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr" autocomplete="current-password" required><div class="sp"></div><button class="btn" id="lb" style="width:100%">دخول</button></form></div>`;
   $('#lf').onsubmit = async ev => { ev.preventDefault(); const b = $('#lb'); b.disabled = true; const { error } = await sb.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value }); b.disabled = false; if (error) return toast(error.message === 'Invalid login credentials' ? 'البريد أو كلمة المرور غير صحيحة' : error.message, 1); boot(); };
 }
 async function boot() {
@@ -1195,9 +1216,10 @@ async function boot() {
   const { data: prof, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
   if (error || !prof) { $('#app').innerHTML = `<div class="center"><div class="box"><h1>لا يوجد ملف مستخدم</h1><p>تأكد من تشغيل ملف schema.sql ثم أعد الدخول.</p><button class="btn" id="o2">خروج</button></div></div>`; $('#o2').onclick = async () => { await sb.auth.signOut(); location.reload(); }; return; }
   if (!prof.active) { await sb.auth.signOut(); loginScreen(); return toast('هذا الحساب موقوف، تواصل مع المدير', 1); }
-  me = prof; try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); } catch (e) {} renderShell(); startRealtime();
+  me = prof; try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); lsSet('name_cache', settings().store_name || ''); } catch (e) {} applyBrand(); renderShell(); startRealtime();
   window.addEventListener('hashchange', route); route();
 }
+applyBrand();
 document.documentElement.dataset.theme = (['soft', 'sepia', 'dark', 'light'].includes(lsGet('theme', 'soft')) ? lsGet('theme', 'soft') : 'soft');
 (function init() {
   if (!PRODUCTION && lsGet('mode', '') === 'demo') { DEMO = true; sb = makeLocalClient(lsGet('demo_role', 'admin')); boot(); return; }
