@@ -4,6 +4,6 @@
    (المفتاح المستخدم هو anon public وليس service_role أبداً)
    ===================================================================== */
 window.APP_CONFIG = {
-  url: '',   // مثال: 'https://abcdxyz.supabase.co'
-  key: ''    // مثال: 'eyJhbGciOi...'
+  url: 'https://piazsgeafoltwcialifs.supabase.co',   // مثال: 'https://abcdxyz.supabase.co'
+  key: 'sb_publishable_rhTX7HWosjmRzLtC9_4mtg_75pMexU8'    // مثال: 'eyJhbGciOi...'
 };
