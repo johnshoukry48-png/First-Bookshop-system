@@ -122,7 +122,7 @@ function dl(name, text, type = 'text/csv;charset=utf-8') { const a = document.cr
 const THEMES = ['soft', 'sepia', 'dark', 'light'], TN = { soft: 'هادئ', sepia: 'ورقي دافئ', dark: 'داكن', light: 'فاتح' };
 const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('theme', t); };
 const PMS = ['نقدى', 'بنك', 'بريد'];
-const appName = () => lsGet('name_cache', '') || 'نظام محاسبة المكتبة';
+const appName = () => lsGet('name_cache', '') || 'First-Bookshop';
 function applyBrand() {
   document.title = appName();
   const lg = lsGet('logo_cache', ''); let l = document.querySelector('link[rel=icon]');
