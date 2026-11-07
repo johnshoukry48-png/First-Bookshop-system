@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>First-Bookshop</title>
-<link rel="icon" type="image/png" href="logo.PNG">
+<title>نظام محاسبة المكتبة</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#e8edee;--card:#f6f8f7;--tx:#26333b;--mu:#64737c;--bd:#d2dcdf;--ac:#3f7f9e;--ac2:#2f6682;--ok:#3d8b5f;--er:#c0504d;--wa:#b9802f;--side:#27373f;--sidetx:#d3dee2;--inp:#fbfcfb;--hd:#e2eaec;--sh:0 4px 18px rgba(30,50,60,.07)}
 [data-theme=light]{--bg:#f3f5fa;--card:#fff;--tx:#162033;--mu:#6b7690;--bd:#e3e8f2;--ac:#2f5bea;--ac2:#1d3fb8;--ok:#16a34a;--er:#dc2626;--wa:#d97706;--side:#0f1b3d;--sidetx:#cdd6f0;--inp:#fff;--hd:#f0f3fa;--sh:0 6px 24px rgba(20,35,80,.08)}
@@ -70,6 +70,7 @@ tfoot td{background:var(--hd);font-weight:800;position:sticky;bottom:0}
 .toast{position:fixed;bottom:18px;left:18px;display:flex;flex-direction:column;gap:8px;z-index:99}
 .toast div{background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;box-shadow:var(--sh);animation:up .25s}.toast .e{background:var(--er);color:#fff}
 @keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+tfoot td{background:var(--hd);font-weight:800}.ta{position:fixed;z-index:200;background:var(--card);border:1px solid var(--ac);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:42vh;overflow:auto;-webkit-overflow-scrolling:touch}.ta div{padding:11px 12px;border-bottom:1px solid var(--bd);cursor:pointer}.ta div.on,.ta div:hover{background:var(--hd)}.ta b{color:var(--ac)}.dirtybar{position:sticky;bottom:0;background:var(--card);border-top:2px solid var(--ac);padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;z-index:5}tr.dirty td{background:rgba(217,119,6,.12)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;z-index:70;padding:14px}
 .modal .m{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:620px;max-height:92vh;overflow:auto}
 .bar{display:flex;align-items:flex-end;gap:10px;height:150px;padding:8px 4px 0}.bar .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%;font-size:11px;color:var(--mu)}
@@ -118,11 +119,19 @@ const monthLabel = k => { if (!k) return ''; if (k === 'opening') return 'افت
 function toast(msg, err) { const d = document.createElement('div'); if (err) d.className = 'e'; d.textContent = msg; $('#toast').appendChild(d); setTimeout(() => d.remove(), err ? 6000 : 3000); }
 const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+/* تفضيلات الطباعة: تُحفظ فوراً في المتصفح وتُزامَن مع حساب المستخدم ليحتفظ بها على كل الأجهزة */
+const prefGet = k => { try { return JSON.parse(lsGet(k, '{}')) || {}; } catch (e) { return {}; } };
+let prefTimer = null;
+function prefSet(k, v) {
+  lsSet(k, JSON.stringify(v)); clearTimeout(prefTimer);
+  prefTimer = setTimeout(() => { try { if (!sb || !sb.auth || !sb.auth.updateUser) return; const all = {}; for (let i = 0; i < localStorage.length; i++) { const kk = localStorage.key(i); if (kk && kk.startsWith('print_')) all[kk] = lsGet(kk, ''); } const r = sb.auth.updateUser({ data: { print_prefs: all } }); r && r.catch && r.catch(() => {}); } catch (e) {} }, 800);
+}
+function prefPull(user) { try { const pp = user && user.user_metadata && user.user_metadata.print_prefs; if (pp) Object.keys(pp).forEach(k => { if (k.startsWith('print_') && lsGet(k, null) == null) lsSet(k, pp[k]); }); } catch (e) {} }
 function dl(name, text, type = 'text/csv;charset=utf-8') { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
 const THEMES = ['soft', 'sepia', 'dark', 'light'], TN = { soft: 'هادئ', sepia: 'ورقي دافئ', dark: 'داكن', light: 'فاتح' };
 const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('theme', t); };
 const PMS = ['نقدى', 'بنك', 'بريد'];
-const appName = () => lsGet('name_cache', '') || 'First-Bookshop';
+const appName = () => lsGet('name_cache', '') || 'نظام محاسبة المكتبة';
 function applyBrand() {
   document.title = appName();
   const lg = lsGet('logo_cache', ''); let l = document.querySelector('link[rel=icon]');
@@ -143,10 +152,38 @@ document.addEventListener('input', e => {
     h.textContent = name && !list.some(x => norm(x.name) === norm(name)) ? '➕ ' + (t.dataset.ref === 'customers' ? 'عميل' : 'ناشر') + ' جديد — سيُضاف تلقائياً عند الحفظ' : '';
   }
 });
-function sortSales(rows) {   // الفواتير بالرقم تصاعدياً، والدفعة (بلا فاتورة) تأتي بعد آخر فاتورة كانت موجودة وقت تسجيلها
-  const all = (S.data.sales || []).slice().sort((a, b) => a.id - b.id), key = new Map(); let mx = 0;
-  all.forEach(r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(), m = /^\d{4}-\d{2}-\d{2}$/.test(x) ? null : x.match(/^\d+/); if (m) { mx = Math.max(mx, +m[0]); key.set(r.id, [+m[0], 0]); } else key.set(r.id, [mx, 1]); });
-  return rows.sort((a, b) => { const x = key.get(a.id) || [0, 1], y = key.get(b.id) || [0, 1]; return x[0] - y[0] || x[1] - y[1] || a.id - b.id; });
+/* منع اقتراحات المتصفح + قائمة اقتراحات مخصصة (تعمل جيداً على الموبايل) */
+(function () {
+  const fix = el => { if (el.matches && el.matches('input,select,textarea') && el.autocomplete !== 'off') { el.setAttribute('autocomplete', 'off'); if (el.matches('input[type=text],input:not([type])')) { el.setAttribute('autocorrect', 'off'); el.setAttribute('spellcheck', 'false'); } } if (el.matches && el.matches('input[list]')) { el.dataset.dl = el.getAttribute('list'); el.removeAttribute('list'); } };
+  const scan = root => { if (root.nodeType !== 1) return; fix(root); root.querySelectorAll && root.querySelectorAll('input,select,textarea').forEach(fix); };
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(scan))).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('DOMContentLoaded', () => scan(document.body));
+  let box = null, cur = null, idx = -1;
+  const hide = () => { if (box) box.remove(); box = null; cur = null; idx = -1; };
+  const show = inp => {
+    const dl = inp.dataset.dl && document.getElementById(inp.dataset.dl); if (!dl) return hide();
+    const q = norm(inp.value), all = [...dl.options].map(o => o.value);
+    let list = all.filter(v => !q || norm(v).includes(q)); list.sort((a, b) => (norm(b).startsWith(q) ? 1 : 0) - (norm(a).startsWith(q) ? 1 : 0)); list = list.filter(v => norm(v) !== q || list.length > 1).slice(0, 60);
+    if (!list.length) return hide();
+    if (!box) { box = document.createElement('div'); box.className = 'ta'; document.body.appendChild(box); }
+    cur = inp; idx = -1; const r = inp.getBoundingClientRect(); box.style.width = r.width + 'px'; box.style.right = 'auto'; box.style.left = r.left + 'px';
+    const below = innerHeight - r.bottom; if (below < 200 && r.top > below) { box.style.top = 'auto'; box.style.bottom = (innerHeight - r.top + 2) + 'px'; box.style.maxHeight = Math.min(innerHeight * .42, r.top - 10) + 'px'; } else { box.style.bottom = 'auto'; box.style.top = (r.bottom + 2) + 'px'; box.style.maxHeight = Math.min(innerHeight * .42, below - 10) + 'px'; }
+    box.innerHTML = list.map(v => { const k = q ? norm(v).indexOf(q) : -1; return `<div data-v="${esc(v)}">${k >= 0 && q ? esc(v.slice(0, k)) + '<b>' + esc(v.slice(k, k + q.length)) + '</b>' + esc(v.slice(k + q.length)) : esc(v)}</div>`; }).join('');
+  };
+  const pick = v => { const i = cur; hide(); if (!i) return; i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); };
+  document.addEventListener('focusin', e => { if (e.target.dataset && e.target.dataset.dl) show(e.target); });
+  document.addEventListener('input', e => { if (e.target.dataset && e.target.dataset.dl && e.isTrusted !== false) show(e.target); });
+  document.addEventListener('mousedown', e => { const d = e.target.closest && e.target.closest('.ta div'); if (d) { e.preventDefault(); pick(d.dataset.v); } else if (box && e.target !== cur) hide(); });
+  document.addEventListener('touchend', e => { const d = e.target.closest && e.target.closest('.ta div'); if (d) { e.preventDefault(); pick(d.dataset.v); } }, { passive: false });
+  document.addEventListener('focusout', e => { if (e.target === cur) setTimeout(() => { if (document.activeElement !== cur) hide(); }, 150); });
+  document.addEventListener('keydown', e => { if (!box || e.target !== cur) return; const it = [...box.children]; if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); idx = (idx + (e.key === 'ArrowDown' ? 1 : -1) + it.length) % it.length; it.forEach((x, i) => x.classList.toggle('on', i === idx)); it[idx].scrollIntoView({ block: 'nearest' }); } else if (e.key === 'Enter' && idx >= 0) { e.preventDefault(); pick(it[idx].dataset.v); } else if (e.key === 'Escape') hide(); });
+  addEventListener('resize', hide);
+})();
+function sortSales(rows) {   // الفواتير بالرقم تصاعدياً؛ الدفعة (بلا فاتورة) تأتي بعد آخر فاتورة سابقة لها (بترتيب التسجيل أو بالتاريخ — الأكبر منهما)
+  const all = (S.data.sales || []).slice().sort((a, b) => a.id - b.id), key = new Map(), invs = []; let mx = 0;
+  const numOf = r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(), m = /^\d{4}-\d{2}-\d{2}$/.test(x) ? null : x.match(/^\d+/); return m ? +m[0] : null; };
+  all.forEach(r => { const n = numOf(r); if (n != null) { mx = Math.max(mx, n); invs.push([n, String(r.sale_date || '')]); key.set(r.id, [n, 0, '']); } else { const d = String(r.sale_date || ''); let md = 0; for (const v of invs) if (v[1] <= d && v[0] > md) md = v[0]; key.set(r.id, [Math.max(mx, md), 1, d]); } });
+  return rows.sort((a, b) => { const x = key.get(a.id) || [0, 1, ''], y = key.get(b.id) || [0, 1, '']; return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2]) || a.id - b.id; });
 }
 const invKey = r => { const x = String(r.invoice_no == null ? '' : r.invoice_no).trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(x)) return [2, 0, x]; const m = x.match(/^\d+/); return m ? [0, +m[0], x] : [1, 0, x]; };
 const invCmp = (a, b) => { const x = invKey(a), y = invKey(b); return x[0] - y[0] || x[1] - y[1] || x[2].localeCompare(y[2], 'en', { numeric: true }) || a.id - b.id; };
@@ -406,10 +443,20 @@ function formHtml(ent, row, idp) {
     return `<div><label class="l" for="${id}">${l}</label>${inp}</div>`;
   }).join('');
 }
+function confirmModal(title, msg, okLabel) {
+  return new Promise(res => {
+    const m = document.createElement('div'); m.className = 'modal'; m.style.zIndex = 300;
+    m.innerHTML = `<div class="m" style="max-width:420px;text-align:center"><h3 style="margin-top:0">${esc(title)}</h3><div style="font-size:16px;line-height:1.9;margin:10px 0 16px">${msg}</div><div class="row" style="justify-content:center"><button class="btn fit" data-y>${esc(okLabel || 'موافق')}</button><button class="btn gh fit" data-n>إلغاء</button></div></div>`;
+    document.body.appendChild(m); const done = v => { m.remove(); res(v); };
+    $('[data-y]', m).onclick = () => done(true); $('[data-n]', m).onclick = () => done(false); m.addEventListener('click', ev => { if (ev.target === m) done(false); });
+    $('[data-y]', m).focus();
+  });
+}
 async function resolveRef(ent, name) {
   const e = ENT[ent]; name = name.trim(); if (!name) throw new Error(`${e.refLabel} مطلوب`);
   let m = S.data[e.ref].find(x => x.name === name) || S.data[e.ref].find(x => norm(x.name) === norm(name));
   if (m) return m.id;
+  if (!(await confirmModal('اسم غير مسجّل', `الاسم <b>«${esc(name)}»</b> غير موجود في قائمة ${e.ref === 'customers' ? 'العملاء' : 'الناشرين'}.<br>هل تريد إضافته كـ${e.ref === 'customers' ? 'عميل' : 'ناشر'} جديد وحفظ الحركة؟`, '✔ إضافة وحفظ'))) throw new Error('أُلغي الحفظ — لم تُحفظ الحركة. صحّح الاسم أو اخترْه من القائمة.');
   const rec = e.ref === 'customers' ? { name, type: 'اجل' } : { name };
   const { data, error } = await sb.from(e.ref).insert(rec).select().single(); if (error) throw error;
   S.data[e.ref].push(data); toast(`➕ أُضيف ${e.ref === 'customers' ? 'عميل' : 'ناشر'} جديد: ${name}`); return data.id;
@@ -428,7 +475,7 @@ async function readForm(ent, idp) {
 }
 async function pageGrid(ent) {
   const e = ENT[ent]; await load('customers', 'publishers', 'app_settings', ent); if (ent === 'sales') S.nextInvNo = await nextInv();
-  const gs = gridState[ent] = gridState[ent] || { q: '', per: '', term: '', ref: '', limit: ent === 'sales' ? 1000 : 200, sort: ent === 'sales' ? 'inv' : 'date' };
+  const gs = gridState[ent] = gridState[ent] || { q: '', per: '', term: '', ref: '', limit: ent === 'sales' ? 1000 : 200, sort: ent === 'sales' ? 'inv' : (ent === 'purchases' ? 'reg' : 'date') };
   const admin = isAdmin();
   const el = $('#page');
   el.innerHTML = `<div class="card noprint wr"><h3>➕ إدخال جديد — ${e.title}</h3>${!admin ? '<div class="note">تظهر لك الحركات التي أدخلتها أنت فقط، ويمكنك تعديل/حذف حركتك خلال 24 ساعة من إدخالها.</div>' : ''}
@@ -438,7 +485,7 @@ async function pageGrid(ent) {
      ${e.per ? `<div class="fit"><label class="l">الشهر</label><select id="fper"><option value="">الكل</option>${[...new Set(S.data[ent].map(r => r.period))].filter(Boolean).sort().map(p => `<option value="${p}" ${gs.per === p ? 'selected' : ''}>${monthLabel(p)}</option>`).join('')}</select></div>` : ''}
      ${e.term ? `<div class="fit"><label class="l">الترم</label><select id="fterm"><option value="">الكل</option>${TERMS.map(t => `<option ${gs.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>` : ''}
      ${e.ref ? `<div><label class="l">${e.refLabel}</label><input id="fref" list="fref_dl" value="${esc(gs.ref)}" placeholder="الكل"><datalist id="fref_dl">${S.data[e.ref].map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>` : ''}
-     ${e.fields.some(f => f[0] === 'pay_method') ? `<div class="fit"><label class="l">طريقة الدفع</label><select id="fpm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}${ent === 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="inv" ${gs.sort === 'inv' ? 'selected' : ''}>رقم الفاتورة (الأصغر ← الأكبر)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>التاريخ (الأقدم ← الأحدث)</option></select></div>` : ''}<div class="fit"><button class="btn gh" id="fcsv">⬇️ CSV</button> <button class="btn gh" id="fprint">🖨️ طباعة</button></div></div>
+     ${e.fields.some(f => f[0] === 'pay_method') ? `<div class="fit"><label class="l">طريقة الدفع</label><select id="fpm"><option value="">الكل</option>${PMS.map(x => `<option ${gs.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}${ent === 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="inv" ${gs.sort === 'inv' ? 'selected' : ''}>رقم الفاتورة (الأصغر ← الأكبر)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>التاريخ (الأقدم ← الأحدث)</option></select></div>` : ''}${ent !== 'sales' ? `<div class="fit"><label class="l">الترتيب</label><select id="fsort"><option value="reg" ${gs.sort === 'reg' ? 'selected' : ''}>ترتيب التسجيل (الأقدم ← الأحدث)</option><option value="date" ${gs.sort === 'date' ? 'selected' : ''}>التاريخ (الأقدم ← الأحدث)</option></select></div>` : ''}<div class="fit"><button class="btn gh" id="fcsv">⬇️ CSV</button> <button class="btn gh" id="fprint">🖨️ طباعة</button></div></div>
      <div class="sp"></div><div id="gridbox"></div></div>`;
   wireForm(ent, 'nf');
   const draw = () => {
@@ -448,7 +495,7 @@ async function pageGrid(ent) {
     if (gs.pm) rows = rows.filter(r => (r.pay_method || 'نقدى') === gs.pm);
     if (gs.ref) rows = rows.filter(r => norm(refName(ent, r)).includes(norm(gs.ref)));
     if (gs.q) { const q = norm(gs.q); rows = rows.filter(r => e.cols.some(k => norm(String(cellVal(ent, r, k) ?? '')).includes(q))); }
-    if (ent === 'sales' && gs.sort === 'inv') sortSales(rows); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id);
+    if (ent === 'sales' && gs.sort === 'inv') sortSales(rows); else if (gs.sort === 'reg') rows.sort((a, b) => a.id - b.id); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id);
     const shown = rows.slice(-gs.limit);
     const canEdit = r => canWrite() && (admin || (r.created_by === me.id && Date.now() - new Date(r.created_at).getTime() < 864e5));
     $('#gridbox').innerHTML = `<div class="mut" style="margin-bottom:6px">عدد السجلات: <b class="num">${rows.length}</b></div><div class="tw"><table><thead><tr><th>#</th>${e.cols.map(k => `<th class="${isNum(k) ? 'n' : ''}">${LAB[k]}</th>`).join('')}${e.per && admin ? '<th>الشهر</th>' : ''}<th class="noprint"></th></tr></thead><tbody>
@@ -491,7 +538,7 @@ function editModal(ent, row, done) {
 
 /* ============================ الطباعة (نافذة تحديد المحتوى والفترة) ============================ */
 const APPCSS = () => (document.querySelector('style') || {}).textContent || '';
-const PRINTCSS = `body{background:#fff!important;color:#000!important;height:auto}.tw{max-height:none!important;overflow:visible!important;border:0!important}table{font-size:inherit}th{position:static!important;background:#eee!important;border:1px solid #888!important;color:#000}td{white-space:normal!important;border:1px solid #999!important}tfoot td{position:static!important;background:#f3f3f3!important}tbody tr:hover{background:none}thead{display:table-header-group}table th,table td{text-align:center!important}.lay{width:100%;border-collapse:collapse}.lay>tbody>tr>td,.lay>tfoot>tr>td{border:0!important;padding:0!important}.lay>tfoot{display:table-footer-group}th{white-space:normal!important}.pf{margin-top:6mm;min-height:20mm;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #777;padding-top:2mm;font-size:11px;color:#222}.pf .pfl{flex:1;white-space:pre-line}.pf img{max-height:20mm;max-width:50mm;object-fit:contain}.stp{border:2px solid #1d3fb8;color:#1d3fb8;border-radius:10px;padding:3px 14px;font-weight:800;transform:rotate(-4deg);text-align:center;font-size:12px}.ph img{height:54px;max-width:120px;object-fit:contain}tr{page-break-inside:avoid}.card{box-shadow:none!important;break-inside:avoid;border:1px solid #bbb!important}.kpi{box-shadow:none!important;border:1px solid #bbb!important}.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}.pt{font-size:1.5em;font-weight:800}.pm{font-size:.85em;color:#444}.sm2{font-size:.85em;margin:2px 0}body{font-weight:600}table{font-size:1.06em}td{font-weight:700!important;color:#000!important;border:1px solid #000!important;padding:5px 6px!important}th{font-weight:800!important;color:#000!important;border:1px solid #000!important;background:#d9d9d9!important;padding:6px!important}td.n,.num{font-weight:800!important}tfoot td{font-weight:800!important;background:#e8e8e8!important}.pt{font-weight:800}`;
+const PRINTCSS = `body{background:#fff!important;color:#000!important;height:auto}.tw{max-height:none!important;overflow:visible!important;border:0!important}table{font-size:inherit}th{position:static!important;background:#eee!important;border:1px solid #888!important;color:#000}td{white-space:normal!important;border:1px solid #999!important}tfoot td{position:static!important;background:#fde68a!important;color:#000!important;font-weight:900!important;border:2px solid #000!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}tbody tr:hover{background:none}thead{display:table-header-group}table th,table td{text-align:center!important}.lay{width:100%;border-collapse:collapse}.lay>tbody>tr>td,.lay>tfoot>tr>td{border:0!important;padding:0!important}.lay>tfoot{display:table-footer-group}th{white-space:normal!important}.pf{margin-top:6mm;min-height:20mm;display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #777;padding-top:2mm;font-size:11px;color:#222}.pf .pfl{flex:1;white-space:pre-line}.pf img{max-height:20mm;max-width:50mm;object-fit:contain}.stp{border:2px solid #1d3fb8;color:#1d3fb8;border-radius:10px;padding:3px 14px;font-weight:800;transform:rotate(-4deg);text-align:center;font-size:12px}.ph img{height:54px;max-width:120px;object-fit:contain}tr{page-break-inside:avoid}.card{box-shadow:none!important;break-inside:avoid;border:1px solid #bbb!important}.kpi{box-shadow:none!important;border:1px solid #bbb!important}.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}.pt{font-size:1.5em;font-weight:800}.pm{font-size:.85em;color:#444}.sm2{font-size:.85em;margin:2px 0}body{font-weight:600}table{font-size:1.06em}td{font-weight:700!important;color:#000!important;border:1px solid #000!important;padding:5px 6px!important}th{font-weight:800!important;color:#000!important;border:1px solid #000!important;background:#d9d9d9!important;padding:6px!important}td.n,.num{font-weight:800!important}tfoot td{font-weight:900!important;background:#fde68a!important;color:#000!important}.pt{font-weight:800}`;
 function printHtml(inner, o) {
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>${esc(o.title)}</title><link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet"><style>${APPCSS()}${PRINTCSS}@page{size:A4 ${o.orientation || 'portrait'};margin:12mm}</style></head><body style="font-size:${o.font || 12}px;padding:0"><table class="lay"><tbody><tr><td>${inner}</td></tr></tbody>${o.stamp === false ? '' : `<tfoot><tr><td>${pFoot(o)}</td></tr></tfoot>`}</table></body></html>`;
   if (window.__printHook) { window.__printHook(html); return; }
@@ -508,7 +555,7 @@ const invOk = (v, o) => { if (o.i1 === '' && o.i2 === '') return true; const n =
 const dOk = (d, o) => (!o.from || d >= o.from) && (!o.to || d <= o.to);
 /** cfg: { key,title, cols:[{k,l,t:'m'|'p'|'t',sum}], filters:{date,invoice,term,ref,hidden}, build(o)->{rows,total?} } */
 function printDialog(cfg, def = {}) {
-  const f = cfg.filters || {}, sv = (() => { try { return JSON.parse(lsGet('print_' + cfg.key, '{}')); } catch (e) { return {}; } })();
+  const f = cfg.filters || {}, sv = prefGet('print_' + cfg.key);
   const m = document.createElement('div'); m.className = 'modal';
   const sel = (sv.cols && sv.cols.length) ? sv.cols : cfg.cols.filter(c => !c.off).map(c => c.k);
   const defOr = sv.orientation || (sel.length > 7 ? 'landscape' : 'portrait');
@@ -530,11 +577,13 @@ function printDialog(cfg, def = {}) {
     term: f.term ? $('#pterm', m).value : '', ref: f.ref ? $('#pref', m).value.trim() : '', hidden: f.hidden ? $('#phid', m).checked : false, order: f.order ? $('#pord', m).value : 'asc',
     cols: $$('#pcols input', m).filter(i => i.checked).map(i => i.dataset.c), totals: $('#ptot', m).checked, numbering: $('#pnum', m).checked, meta: $('#pmeta', m).checked, stamp: $('#pstamp', m).checked, logo: $('#plogo', m).checked, orientation: $('#por', m).value, font: +$('#pfs', m).value });
   const cnt = () => { try { $('#pcnt', m).textContent = 'عدد السجلات التي ستُطبع: ' + cfg.build(read()).rows.length; } catch (e) { $('#pcnt', m).textContent = ''; } };
-  m.addEventListener('input', cnt); m.addEventListener('change', cnt); cnt();
+  if (f.order && sv.order) $('#pord', m).value = sv.order;
+  const keep = () => { const o = read(); prefSet('print_' + cfg.key, { cols: o.cols, totals: o.totals, numbering: o.numbering, meta: o.meta, stamp: o.stamp, logo: o.logo, orientation: o.orientation, font: o.font, order: o.order }); };
+  m.addEventListener('input', cnt); m.addEventListener('change', cnt); m.addEventListener('change', keep); cnt();
   $('#pcl', m).onclick = () => m.remove();
   $('#pgo', m).onclick = () => {
     const o = read(); if (!o.cols.length) return toast('اختر عموداً واحداً على الأقل', 1);
-    lsSet('print_' + cfg.key, JSON.stringify({ cols: o.cols, totals: o.totals, numbering: o.numbering, meta: o.meta, stamp: o.stamp, logo: o.logo, orientation: o.orientation, font: o.font }));
+    keep();
     const out = cfg.build(o), cols = cfg.cols.filter(c => o.cols.includes(c.k));
     const cell = (c, v) => c.t === 'm' ? fmt(v) : c.t === 'p' ? pct(v) : esc(v == null ? '' : v);
     const tot = o.totals ? (out.total || Object.fromEntries(cfg.cols.filter(c => c.sum).map(c => [c.k, sum(out.rows, r => r[c.k])]))) : null;
@@ -551,6 +600,11 @@ function printSections(title) {
    <div class="grid g2" style="margin-top:10px"><div><label class="l">اتجاه الورقة</label><select id="por"><option value="portrait">عمودي</option><option value="landscape">أفقي</option></select></div><div><label class="l">حجم الخط</label><select id="pfs"><option value="10">صغير</option><option value="12" selected>متوسط</option><option value="14">كبير</option></select></div></div>
    <label style="display:flex;gap:6px;align-items:center;margin:10px 0"><input type="checkbox" id="pmeta" checked> تاريخ الطباعة واسم المستخدم</label><label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="pstamp" checked> الطابع والتذييل</label><label style="display:flex;gap:6px;align-items:center;margin:6px 0"><input type="checkbox" id="plogo" checked> اللوجو</label><div class="row"><button class="btn fit" id="pgo">🖨️ طباعة</button><button class="btn gh fit" id="pcl">إلغاء</button></div></div>`;
   document.body.appendChild(m); $('#pcl', m).onclick = () => m.remove();
+  const pk = 'print_sec_' + title, sv = prefGet(pk);
+  if (sv.orientation) $('#por', m).value = sv.orientation; if (sv.font) $('#pfs', m).value = sv.font;
+  ['meta', 'stamp', 'logo'].forEach(k => { if (sv[k] === false) $('#p' + k, m).checked = false; });
+  if (sv.secs) $$('input[data-i]', m).forEach(i => { const lb = secs[+i.dataset.i].dataset.plabel || 'قسم ' + (+i.dataset.i + 1); if (lb in sv.secs) i.checked = sv.secs[lb]; });
+  m.addEventListener('change', () => { const secsO = {}; $$('input[data-i]', m).forEach(i => secsO[secs[+i.dataset.i].dataset.plabel || 'قسم ' + (+i.dataset.i + 1)] = i.checked); prefSet(pk, { orientation: $('#por', m).value, font: +$('#pfs', m).value, meta: $('#pmeta', m).checked, stamp: $('#pstamp', m).checked, logo: $('#plogo', m).checked, secs: secsO }); });
   $('#pgo', m).onclick = () => {
     const pick = $$('input[data-i]', m).filter(i => i.checked).map(i => secs[+i.dataset.i]); if (!pick.length) return toast('اختر قسماً واحداً على الأقل', 1);
     const sub = ($('#dm') || $('#tm')) ? [`الشهر: ${($('#dm') || $('#tm')).selectedOptions[0].textContent}`] : [];
@@ -565,7 +619,7 @@ const gridPrintCfg = ent => {
     cols: [...e.cols.map(k => ({ k, l: LAB[k], t: isNum(k) ? 'm' : 't', sum: e.sums.includes(k) })), ...(e.per ? [{ k: 'period', l: 'الشهر', t: 't', off: true }] : [])],
     build(o) {
       let rows = S.data[ent].filter(r => dOk(r[e.dateKey], o) && (!o.term || r.term === o.term) && (!o.ref || norm(refName(ent, r)).includes(norm(o.ref))) && (ent !== 'sales' || invOk(r.invoice_no, o)));
-      if (ent === 'sales') sortSales(rows); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
+      if (ent === 'sales') sortSales(rows); else if (ent === 'purchases') rows.sort((a, b) => a.id - b.id); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
       return { rows: rows.map(r => ({ ...Object.fromEntries(e.cols.map(k => [k, cellVal(ent, r, k)])), period: monthLabel(r.period) })) };
     } };
 };
@@ -793,12 +847,23 @@ async function pagePayments(kind) {
 
 async function pageMasters() {
   await load('customers', 'publishers', 'sales', 'purchases');
-  const gs = gridState.ms = gridState.ms || { tab: 'c', q: '' };
+  const gs = gridState.ms = gridState.ms || { tab: 'c', q: '' }; gs.dirty = gs.dirty || { c: {}, p: {} };
   const draw = () => {
-    const isC = gs.tab === 'c', list = (isC ? S.data.customers : S.data.publishers).filter(x => !gs.q || norm(x.name).includes(norm(gs.q)));
-    $('#msbox').innerHTML = `<div class="tw"><table><thead><tr><th>الاسم</th>${isC ? '<th>النوع</th><th class="n">الحد الائتماني</th>' : ''}<th>يظهر في الأرصدة</th><th></th></tr></thead><tbody>${list.map(x => `<tr data-id="${x.id}"><td><input value="${esc(x.name)}" data-f="name"></td>${isC ? `<td><select data-f="type"><option ${x.type === 'اجل' ? 'selected' : ''}>اجل</option><option ${x.type === 'نقدى' ? 'selected' : ''}>نقدى</option></select></td><td><input class="num" data-f="credit_limit" value="${x.credit_limit == null ? '' : x.credit_limit}" placeholder="—"></td>` : ''}<td><input type="checkbox" data-f="show_in_balances" ${x.show_in_balances ? 'checked' : ''}></td><td><button class="btn sm" data-sv>💾</button> <button class="btn gh sm" data-dl>🗑️</button></td></tr>`).join('')}</tbody></table></div>`;
-    $$('[data-sv]').forEach(b => b.onclick = async () => { const tr = b.closest('tr'), rec = {}; $$('[data-f]', tr).forEach(i => rec[i.dataset.f] = i.type === 'checkbox' ? i.checked : i.value.trim()); if (isC) rec.credit_limit = rec.credit_limit === '' ? null : num(rec.credit_limit); const { error } = await sb.from(isC ? 'customers' : 'publishers').update(rec).eq('id', +tr.dataset.id); if (error) return toast(error.message, 1); invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); toast('تم الحفظ ✔'); });
-    $$('[data-dl]').forEach(b => b.onclick = async () => { const id = +b.closest('tr').dataset.id; if (!confirm('حذف هذا الحساب؟ لا يمكن حذف حساب له حركات.')) return; const { error } = await sb.from(isC ? 'customers' : 'publishers').delete().eq('id', id); if (error) return toast('لا يمكن الحذف: الحساب مرتبط بحركات', 1); invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); draw(); });
+    const isC = gs.tab === 'c', dirty = gs.dirty[gs.tab], list = (isC ? S.data.customers : S.data.publishers).map(x => dirty[x.id] ? { ...x, ...dirty[x.id] } : x).filter(x => !gs.q || norm(x.name).includes(norm(gs.q)));
+    $('#msbox').innerHTML = `<div class="tw"><table><thead><tr><th>الاسم</th>${isC ? '<th>النوع</th><th class="n">الحد الائتماني</th>' : ''}<th>يظهر في الأرصدة</th><th></th></tr></thead><tbody>${list.map(x => `<tr data-id="${x.id}" class="${dirty[x.id] ? 'dirty' : ''}"><td><input value="${esc(x.name)}" data-f="name"></td>${isC ? `<td><select data-f="type"><option ${x.type === 'اجل' ? 'selected' : ''}>اجل</option><option ${x.type === 'نقدى' ? 'selected' : ''}>نقدى</option></select></td><td><input class="num" data-f="credit_limit" value="${x.credit_limit == null ? '' : x.credit_limit}" placeholder="—"></td>` : ''}<td><input type="checkbox" data-f="show_in_balances" ${x.show_in_balances ? 'checked' : ''}></td><td><button class="btn gh sm" data-dl>🗑️</button></td></tr>`).join('')}</tbody></table></div>
+      <div class="dirtybar"><span id="dcnt" class="mut"></span><div><button class="btn gh fit" id="mAll" style="margin-inline-end:6px">☑️ إظهار الكل</button><button class="btn gh fit" id="mNone" style="margin-inline-end:6px">⬜ إخفاء الكل</button><button class="btn fit" id="mSave">💾 حفظ كل التعديلات</button></div></div>`;
+    const cnt = () => { const n = Object.keys(dirty).length; $('#dcnt').textContent = n ? `تعديلات غير محفوظة: ${n}` : 'لا توجد تعديلات غير محفوظة'; $('#mSave').disabled = !n; };
+    const touch = tr => { const rec = {}; $$('[data-f]', tr).forEach(i => rec[i.dataset.f] = i.type === 'checkbox' ? i.checked : i.value); dirty[+tr.dataset.id] = rec; tr.classList.add('dirty'); cnt(); };
+    $$('#msbox tbody tr').forEach(tr => { tr.addEventListener('input', () => touch(tr)); tr.addEventListener('change', () => touch(tr)); });
+    const setAll = v => { $$('#msbox tbody tr').forEach(tr => { const c = $('[data-f=show_in_balances]', tr); if (c.checked !== v) { c.checked = v; touch(tr); } }); };
+    $('#mAll').onclick = () => setAll(true); $('#mNone').onclick = () => setAll(false); cnt();
+    $('#mSave').onclick = async () => {
+      const tbl = isC ? 'customers' : 'publishers', ids = Object.keys(dirty); if (!ids.length) return; $('#mSave').disabled = true; let bad = 0, ok = 0;
+      for (const id of ids) { const r = dirty[id], rec = { name: String(r.name).trim(), show_in_balances: !!r.show_in_balances }; if (!rec.name) { bad++; continue; } if (isC) { rec.type = r.type; rec.credit_limit = r.credit_limit === '' || r.credit_limit == null ? null : num(r.credit_limit); }
+        const { error } = await sb.from(tbl).update(rec).eq('id', +id); if (error) { bad++; toast(error.message, 1); } else { delete dirty[id]; ok++; } }
+      invalidate(tbl); await load(tbl); draw(); toast(bad ? `حُفظ ${ok} وتعذّر ${bad}` : `تم حفظ ${ok} تعديل ✔`, !!bad);
+    };
+    $$('[data-dl]').forEach(b => b.onclick = async () => { const id = +b.closest('tr').dataset.id; if (!confirm('حذف هذا الحساب؟ لا يمكن حذف حساب له حركات.')) return; const { error } = await sb.from(isC ? 'customers' : 'publishers').delete().eq('id', id); if (error) return toast('لا يمكن الحذف: الحساب مرتبط بحركات', 1); delete dirty[id]; invalidate(isC ? 'customers' : 'publishers'); await load(isC ? 'customers' : 'publishers'); draw(); });
   };
   $('#page').innerHTML = `<div class="card"><div class="tabs"><button data-t="c" class="${gs.tab === 'c' ? 'on' : ''}">العملاء</button><button data-t="p" class="${gs.tab === 'p' ? 'on' : ''}">الناشرون</button></div><div class="row"><div><label class="l">بحث</label><input id="mq" value="${esc(gs.q)}"></div><div class="wr"><label class="l">إضافة جديد</label><input id="mn" placeholder="الاسم"></div><div class="fit"><button class="btn" id="mA">+ إضافة</button> <button class="btn gh" id="mP">🖨️ طباعة</button></div></div><div class="sp"></div><div id="msbox"></div></div>`;
   $('#mP').onclick = () => printDialog(mastersPrintCfg(gs.tab === 'c'));
@@ -1207,7 +1272,7 @@ function setupScreen() {
   $('#go').onclick = () => { const u = $('#u').value.trim(), k = $('#k').value.trim(); if (!/^https:\/\/.+/.test(u) || k.length < 20) return toast('بيانات غير صحيحة', 1); lsSet('sb_url', u); lsSet('sb_key', k); location.reload(); };
 }
 function loginScreen() {
-  $('#app').innerHTML = `<div class="center"><form class="box" id="lf"><img src="logo.PNG" alt="لوجو المكتبة" style="height:64px;max-width:100%;object-fit:contain;margin-bottom:12px"><h1>First-Bookshop</h1><p>سجّل الدخول للمتابعة</p><label class="l">البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="username" required><div class="sp"></div><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr" autocomplete="current-password" required><div class="sp"></div><button class="btn" id="lb" style="width:100%">دخول</button></form></div>`;
+  $('#app').innerHTML = `<div class="center"><form class="box" id="lf">${lsGet('logo_cache', '') ? `<img src="${lsGet('logo_cache', '')}" alt="" style="height:64px;max-width:100%;object-fit:contain;margin-bottom:12px">` : '<div class="logo">📚</div>'}<h1>${esc(appName())}</h1><p>سجّل الدخول للمتابعة</p><label class="l">البريد الإلكتروني</label><input id="em" type="email" dir="ltr" autocomplete="username" required><div class="sp"></div><label class="l">كلمة المرور</label><input id="pw" type="password" dir="ltr" autocomplete="current-password" required><div class="sp"></div><button class="btn" id="lb" style="width:100%">دخول</button></form></div>`;
   $('#lf').onsubmit = async ev => { ev.preventDefault(); const b = $('#lb'); b.disabled = true; const { error } = await sb.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value }); b.disabled = false; if (error) return toast(error.message === 'Invalid login credentials' ? 'البريد أو كلمة المرور غير صحيحة' : error.message, 1); boot(); };
 }
 async function boot() {
@@ -1216,7 +1281,7 @@ async function boot() {
   const { data: prof, error } = await sb.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
   if (error || !prof) { $('#app').innerHTML = `<div class="center"><div class="box"><h1>لا يوجد ملف مستخدم</h1><p>تأكد من تشغيل ملف schema.sql ثم أعد الدخول.</p><button class="btn" id="o2">خروج</button></div></div>`; $('#o2').onclick = async () => { await sb.auth.signOut(); location.reload(); }; return; }
   if (!prof.active) { await sb.auth.signOut(); loginScreen(); return toast('هذا الحساب موقوف، تواصل مع المدير', 1); }
-  me = prof; try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); lsSet('name_cache', settings().store_name || ''); } catch (e) {} applyBrand(); renderShell(); startRealtime();
+  me = prof; prefPull(session.user); try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); lsSet('name_cache', settings().store_name || ''); } catch (e) {} applyBrand(); renderShell(); startRealtime();
   window.addEventListener('hashchange', route); route();
 }
 applyBrand();
