@@ -131,7 +131,7 @@ function dl(name, text, type = 'text/csv;charset=utf-8') { const a = document.cr
 const THEMES = ['soft', 'sepia', 'dark', 'light'], TN = { soft: 'هادئ', sepia: 'ورقي دافئ', dark: 'داكن', light: 'فاتح' };
 const setTheme = t => { document.documentElement.dataset.theme = t; lsSet('theme', t); };
 const PMS = ['نقدى', 'بنك', 'بريد'];
-const appName = () => lsGet('name_cache', '') || 'First-Bookshop';
+const appName = () => lsGet('name_cache', '') || 'نظام محاسبة المكتبة';
 function applyBrand() {
   document.title = appName();
   const lg = lsGet('logo_cache', ''); let l = document.querySelector('link[rel=icon]');
@@ -1096,6 +1096,8 @@ async function pageImport() {
         const rows = recs.map(({ rec }) => d.table === 'customers' ? { name: rec.name, type: rec.type || 'اجل', credit_limit: rec.credit_limit == null ? null : rec.credit_limit } : { name: rec.name });
         const { error } = await sb.from(d.table).upsert(rows, { onConflict: 'name' }); if (error) throw new Error(error.message);
         log(`✔ تم استيراد/تحديث ${rows.length} اسم`);
+      } else if (!d.ref) {   // مصروفات: بلا عميل/ناشر
+        const out = recs.map(({ rec }) => d.make(rec)); await chunk(d.table, out); log(`✔ تم استيراد ${out.length} صف إلى «${d.t}»`);
       } else {
         const refT = d.ref; let mp = new Map(S.data[refT].map(x => [norm(x.name), x])); const miss = new Map();
         const create = $('#icr').checked, skipped = [];
