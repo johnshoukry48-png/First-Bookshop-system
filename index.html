@@ -72,6 +72,7 @@ tfoot td{background:var(--hd);font-weight:800;position:sticky;bottom:0}
 @keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
 tfoot td{background:var(--hd);font-weight:800}.ta{position:fixed;z-index:200;background:var(--card);border:1px solid var(--ac);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:42vh;overflow:auto;-webkit-overflow-scrolling:touch}.ta div{padding:11px 12px;border-bottom:1px solid var(--bd);cursor:pointer}.ta div.on,.ta div:hover{background:var(--hd)}.ta b{color:var(--ac)}.dirtybar{position:sticky;bottom:0;background:var(--card);border-top:2px solid var(--ac);padding:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;z-index:5}tr.dirty td{background:rgba(217,119,6,.12)}
 .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}.rcard{display:flex;gap:12px;align-items:center;padding:14px;border:1px solid var(--bd);border-radius:14px;text-decoration:none;color:var(--tx);background:var(--card);min-height:64px}.rcard:hover,.rcard:active{border-color:var(--ac);background:var(--hd)}.rcard .ri{font-size:26px}.rcard small{display:block;color:var(--mu);font-size:12px;margin-top:2px}.chips{display:flex;gap:6px;flex-wrap:wrap}
+.ps-past td{background:rgba(22,163,74,.16)}.ps-late td{background:rgba(220,38,38,.20);color:#b91c1c;font-weight:700}.ps-next td{background:rgba(120,120,120,.07)}.late-r td{background:rgba(220,38,38,.14)}.bdg{background:#dc2626;color:#fff;border-radius:99px;font-size:11px;padding:1px 7px;margin-inline-start:4px}.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.kpi{border:1px solid var(--bd);border-radius:12px;padding:10px 12px}.kpi small{display:block;color:var(--mu)}.kpi b{font-size:18px}.kpi.red{border-color:#dc2626;background:rgba(220,38,38,.12)}.kpi.red b{color:#dc2626}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;z-index:70;padding:14px}
 .modal .m{background:var(--card);border-radius:16px;padding:20px;width:100%;max-width:620px;max-height:92vh;overflow:auto}
 .bar{display:flex;align-items:flex-end;gap:10px;height:150px;padding:8px 4px 0}.bar .c{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%;font-size:11px;color:var(--mu)}
@@ -113,7 +114,9 @@ const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
 const fmt = x => (x == null || isNaN(x)) ? '—' : Number(x).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const pct = x => (x == null || !isFinite(x)) ? '—' : (x * 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 const cls = x => x > 0.005 ? 'pos' : x < -0.005 ? 'neg' : '';
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const addMonths = (d, k) => { const [y, m, dd] = d.split('-').map(Number), t = new Date(Date.UTC(y, m - 1 + k, 1)), last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); t.setUTCDate(Math.min(dd, last)); return t.toISOString().slice(0, 10); };
 const norm = s => String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim().toLowerCase();
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 const monthLabel = k => { if (!k) return ''; if (k === 'opening') return 'افتتاحي'; const [y, m] = k.split('-'); return `${MONTHS_AR[+m - 1] || m} ${y}`; };
@@ -217,7 +220,7 @@ function parseCsv(text) {
 /* ============================ الحالة ============================ */
 let sb = null, me = null;      // me = { id, email, role, full_name, active }
 const S = { data: {}, loading: {} };
-const TABLES = { customers: 'name', publishers: 'name', sales: 'id', purchases: 'id', expenses: 'id', customer_returns: 'id', publisher_returns: 'id', treasury_months: 'month', pending_items: 'id', adjustments: 'id', app_settings: 'key' };
+const TABLES = { customers: 'name', publishers: 'name', sales: 'id', purchases: 'id', expenses: 'id', customer_returns: 'id', publisher_returns: 'id', treasury_months: 'month', pending_items: 'id', adjustments: 'id', installments: 'id', app_settings: 'key' };
 async function fetchAll(table) {
   let out = [], from = 0;
   for (;;) {
@@ -360,7 +363,12 @@ const ENT = {
 };
 const LAB = { invoice_no: 'رقم الفاتورة', customer_id: 'اسم العميل', publisher_id: 'اسم الناشر', invoice_value: 'قيمة الفاتورة', commission: 'العمولة', credit: 'الاجل', payments: 'الدفعات', sale_date: 'التاريخ', purchase_date: 'التاريخ', expense_date: 'التاريخ', return_date: 'التاريخ', term: 'الترم', cash_purchases: 'مشتريات نقدى', credit_purchases: 'مشتريات اجل', category: 'البند', amount: 'المبلغ', description: 'بيان', note: 'ملاحظة', period: 'الشهر', pay_method: 'طريقة الدفع', inv_type: 'نوع الفاتورة', due: 'المستحق للدفع' };
 ENT.adj_c = { ref: 'customers', refLabel: 'اسم العميل' }; ENT.adj_p = { ref: 'publishers', refLabel: 'اسم الناشر' };
-const gridState = {};   // حالة الفلاتر لكل كيان
+/* حالة الفلاتر/الترتيب/الشهر لكل صفحة: تُحفظ في المتصفح وتبقى بعد الحفظ والتحديث والخروج والدخول */
+const UI_KEY = 'bk_ui_state_v1';
+const gridState = (() => { try { return JSON.parse(localStorage.getItem(UI_KEY) || '{}') || {}; } catch (e) { return {}; } })();
+let uiTimer = null;
+const uiSave = () => { clearTimeout(uiTimer); uiTimer = setTimeout(() => { try { localStorage.setItem(UI_KEY, JSON.stringify(gridState, (k, v) => (k === 'dirty' || k === 'q') ? undefined : v)); } catch (e) {} }, 250); };
+['input', 'change', 'click', 'hashchange'].forEach(ev => addEventListener(ev, uiSave, true));
 
 function refName(ent, row) { const e = ENT[ent]; if (!e.ref) return ''; const m = S.data[e.ref].find(x => x.id === row[e.refKey]); return m ? m.name : ''; }
 const pmDisp = (ent, r) => {
@@ -582,6 +590,7 @@ function printDialog(cfg, def = {}) {
    ${f.ref ? `<div><label class="l">${esc(f.ref.label)}</label><input id="pref" list="pref_dl" value="${esc(def.ref || '')}" placeholder="الكل"><datalist id="pref_dl">${f.ref.list.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div>` : ''}
    ${f.hidden ? `<div style="display:flex;align-items:flex-end"><label style="display:flex;gap:6px;align-items:center;margin-bottom:9px"><input type="checkbox" id="phid" ${def.hidden ? 'checked' : ''}> إظهار الحسابات المخفية في Excel</label></div>` : ''}
    ${f.pm ? `<div><label class="l">طريقة الدفع</label><select id="ppm"><option value="">الكل</option>${PMS.map(x => `<option ${def.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select></div>` : ''}
+   ${f.by ? `<div><label class="l">الترتيب حسب</label><select id="pby">${f.by === 'sales' ? '<option value="">رقم الفاتورة</option>' : '<option value="">الافتراضي</option>'}<option value="date">التاريخ</option><option value="reg">ترتيب التسجيل</option></select></div>` : ''}
    ${f.order ? `<div><label class="l">الترتيب</label><select id="pord"><option value="asc">من الأقدم للأحدث</option><option value="desc">من الأحدث للأقدم</option></select></div>` : ''}</div>
    ${f.invoice ? '<div class="mut" style="font-size:12px;margin-top:4px">نطاق الفواتير يشمل الأرقام العددية فقط (الفواتير مثل 7-13 تُستثنى عند تحديده).</div>' : ''}
    <label class="l" style="margin-top:12px">الأعمدة التي تظهر في الورقة</label><div class="row" id="pcols" style="gap:6px 14px">${cfg.cols.map(c => `<label style="display:flex;gap:5px;align-items:center;flex:0 0 auto;min-width:0"><input type="checkbox" data-c="${c.k}" ${sel.includes(c.k) ? 'checked' : ''}> ${esc(c.l)}</label>`).join('')}</div>
@@ -590,11 +599,11 @@ function printDialog(cfg, def = {}) {
    <div class="mut" id="pcnt" style="margin:12px 0"></div><div class="row"><button class="btn fit" id="pgo">🖨️ طباعة</button><button class="btn gh fit" id="pcl">إلغاء</button></div></div>`;
   document.body.appendChild(m);
   const read = () => ({ title: $('#pt', m).value.trim() || cfg.title, from: f.date ? $('#pfrom', m).value : '', to: f.date ? $('#pto', m).value : '', i1: f.invoice ? $('#pi1', m).value.trim() : '', i2: f.invoice ? $('#pi2', m).value.trim() : '',
-    term: f.term ? $('#pterm', m).value : '', ref: f.ref ? $('#pref', m).value.trim() : '', hidden: f.hidden ? $('#phid', m).checked : false, pm: f.pm ? $('#ppm', m).value : '', order: f.order ? $('#pord', m).value : 'asc',
+    term: f.term ? $('#pterm', m).value : '', ref: f.ref ? $('#pref', m).value.trim() : '', hidden: f.hidden ? $('#phid', m).checked : false, pm: f.pm ? $('#ppm', m).value : '', by: f.by ? $('#pby', m).value : '', order: f.order ? $('#pord', m).value : 'asc',
     cols: $$('#pcols input', m).filter(i => i.checked).map(i => i.dataset.c), totals: $('#ptot', m).checked, numbering: $('#pnum', m).checked, meta: $('#pmeta', m).checked, stamp: $('#pstamp', m).checked, logo: $('#plogo', m).checked, orientation: $('#por', m).value, font: +$('#pfs', m).value });
   const cnt = () => { try { $('#pcnt', m).textContent = 'عدد السجلات التي ستُطبع: ' + cfg.build(read()).rows.length; } catch (e) { $('#pcnt', m).textContent = ''; } };
-  if (f.order) $('#pord', m).value = def.order || sv.order || 'asc';
-  const keep = () => { const o = read(); prefSet('print_' + cfg.key, { cols: o.cols, totals: o.totals, numbering: o.numbering, meta: o.meta, stamp: o.stamp, logo: o.logo, orientation: o.orientation, font: o.font, order: o.order }); };
+  if (f.order) $('#pord', m).value = def.order || sv.order || 'asc'; if (f.by) $('#pby', m).value = def.by != null ? def.by : (sv.by || '');
+  const keep = () => { const o = read(); prefSet('print_' + cfg.key, { cols: o.cols, totals: o.totals, numbering: o.numbering, meta: o.meta, stamp: o.stamp, logo: o.logo, orientation: o.orientation, font: o.font, order: o.order, by: o.by }); };
   m.addEventListener('input', cnt); m.addEventListener('change', cnt); m.addEventListener('change', keep); cnt();
   $('#pcl', m).onclick = () => m.remove();
   $('#pgo', m).onclick = () => {
@@ -626,11 +635,11 @@ function printSections(title) {
 }
 const gridPrintCfg = ent => {
   const e = ENT[ent];
-  return { key: ent, title: e.title, filters: { date: true, invoice: ent === 'sales', term: !!e.term, ref: e.ref ? { label: e.refLabel, list: S.data[e.ref] } : null, order: true },
+  return { key: ent, title: e.title, filters: { date: true, invoice: ent === 'sales', term: !!e.term, ref: e.ref ? { label: e.refLabel, list: S.data[e.ref] } : null, order: true, by: ent },
     cols: [...e.cols.map(k => ({ k, l: LAB[k], t: isNum(k) ? 'm' : 't', sum: e.sums.includes(k) })), ...(e.per ? [{ k: 'period', l: 'الشهر', t: 't', off: true }] : [])],
     build(o) {
       let rows = S.data[ent].filter(r => dOk(r[e.dateKey], o) && (!o.term || r.term === o.term) && (!o.ref || norm(refName(ent, r)).includes(norm(o.ref))) && (ent !== 'sales' || invOk(r.invoice_no, o)));
-      if (ent === 'sales') sortSales(rows); else if (ent === 'purchases') rows.sort((a, b) => a.id - b.id); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
+      if (o.by === 'date') rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); else if (o.by === 'reg') rows.sort((a, b) => a.id - b.id); else if (ent === 'sales') sortSales(rows); else if (ent === 'purchases') rows.sort((a, b) => a.id - b.id); else rows.sort((a, b) => String(a[e.dateKey]).localeCompare(String(b[e.dateKey])) || a.id - b.id); if (o.order === 'desc') rows.reverse();
       return { rows: rows.map(r => ({ ...Object.fromEntries(e.cols.map(k => [k, cellVal(ent, r, k)])), period: monthLabel(r.period) })) };
     } };
 };
@@ -731,11 +740,13 @@ const REPORTS = [
   { k: 'pm', g: 'fn', i: '🏦', t: 'كشف حساب البنك / البريد / النقدى', d: 'وارد ومنصرف ورصيد تراكمي لكل طريقة', defaults: { pm: 'بنك' }, cfg: () => pmStmtCfg() },
   { k: 'expenses', g: 'fn', i: '💸', t: 'المصروفات', d: 'تفصيلي', cfg: () => gridPrintCfg('expenses') },
   { k: 'expcat', g: 'fn', i: '🧮', t: 'المصروفات حسب البند', d: 'ملخص كل بند', cfg: () => expCatCfg() },
+  { k: 'inst-ov', g: 'sc', i: '📆', t: 'جداول السداد — ملخص كل العملاء', d: 'المتأخر والدفعة القادمة', cfg: () => instOverviewCfg() },
+  { k: 'inst-c', g: 'sc', i: '🗓️', t: 'جدول سداد عميل', d: 'الدفعات ولنا طرفه', needs: 'c', cfg: ent => instCustCfg(ent) },
   { k: 'list-c', g: 'ot', i: '📋', t: 'قائمة العملاء', d: '', cfg: () => mastersPrintCfg(true) },
   { k: 'list-p', g: 'ot', i: '📋', t: 'قائمة الناشرين', d: '', cfg: () => mastersPrintCfg(false) }
 ];
 async function pageReports(key) {
-  await load('customers', 'publishers', 'sales', 'purchases', 'expenses', 'customer_returns', 'publisher_returns', 'adjustments', 'app_settings');
+  await load('customers', 'publishers', 'sales', 'purchases', 'expenses', 'customer_returns', 'publisher_returns', 'adjustments', 'installments', 'app_settings');
   const gs = gridState.rep = gridState.rep || { k: '', f: {} };
   const rp = REPORTS.find(r => r.k === key);
   if (!rp) {
@@ -745,6 +756,7 @@ async function pageReports(key) {
   if (gs.k !== rp.k) { gs.k = rp.k; gs.f = { ...(rp.defaults || {}) }; }
   const f = gs.f, ents = rp.needs ? S.data[rp.needs === 'c' ? 'customers' : 'publishers'] : [];
   const probe = rp.needs ? rp.cfg(ents[0] || { id: 0, name: '' }) : rp.cfg(), fl = probe.filters || {};
+  if (fl.by && f.by === undefined) f.by = 'date';
   const fld = (lbl, inner) => `<div><label class="l">${lbl}</label>${inner}</div>`;
   $('#page').innerHTML = `<div class="card noprint"><div class="row" style="align-items:flex-end"><div class="fit"><a class="btn gh" href="#/reports">← كل التقارير</a></div><div><label class="l">التقرير</label><select id="rsel">${REPORT_GROUPS.map(([g, gl]) => `<optgroup label="${esc(gl)}">${REPORTS.filter(r => r.g === g).map(r => `<option value="${r.k}" ${r.k === rp.k ? 'selected' : ''}>${esc(r.t)}</option>`).join('')}</optgroup>`).join('')}</select></div></div><div class="sp"></div>
    <div class="grid g4">
@@ -754,6 +766,7 @@ async function pageReports(key) {
     ${fl.term ? fld('الترم', `<select data-rf="term"><option value="">الكل</option>${TERMS.map(t => `<option ${f.term === t ? 'selected' : ''}>${t}</option>`).join('')}</select>`) : ''}
     ${fl.ref ? fld(esc(fl.ref.label), `<input data-rf="ref" list="rf_rl" value="${esc(f.ref || '')}" placeholder="الكل"><datalist id="rf_rl">${fl.ref.list.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist>`) : ''}
     ${fl.pm ? fld('طريقة الدفع', `<select data-rf="pm"><option value="">الكل</option>${PMS.map(x => `<option ${f.pm === x ? 'selected' : ''}>${x}</option>`).join('')}</select>`) : ''}
+    ${fl.by ? fld('الترتيب حسب', `<select data-rf="by"><option value="date" ${f.by === 'date' ? 'selected' : ''}>التاريخ</option><option value="reg" ${f.by === 'reg' ? 'selected' : ''}>ترتيب التسجيل</option><option value="" ${f.by === '' ? 'selected' : ''}>${fl.by === 'sales' ? 'رقم الفاتورة' : 'الافتراضي'}</option></select>`) : ''}
     ${fl.order ? fld('الترتيب', `<select data-rf="order"><option value="asc" ${f.order !== 'desc' ? 'selected' : ''}>من الأقدم للأحدث</option><option value="desc" ${f.order === 'desc' ? 'selected' : ''}>من الأحدث للأقدم</option></select>`) : ''}
     ${fl.hidden ? `<div style="display:flex;align-items:flex-end"><label style="display:flex;gap:6px;align-items:center;margin-bottom:9px"><input type="checkbox" data-rf="hidden" ${f.hidden ? 'checked' : ''}> إظهار الحسابات المخفية</label></div>` : ''}
    </div>
@@ -762,7 +775,7 @@ async function pageReports(key) {
    <div class="card"><div class="row noprint" style="align-items:center"><div id="rcnt" class="mut"></div><div class="fit"><button class="btn" id="rprint">🖨️ طباعة</button> <button class="btn gh" id="rcsv">⬇️ CSV</button></div></div><div class="sp"></div><div id="rres"></div></div>`;
   const pk = () => 'print_' + probe.key;
   let cur = null;
-  const outOpts = () => ({ title: probe.title, from: f.from || '', to: f.to || '', i1: (f.i1 || '').trim(), i2: (f.i2 || '').trim(), term: f.term || '', ref: (f.ref || '').trim(), hidden: !!f.hidden, order: f.order || 'asc', pm: f.pm || '' });
+  const outOpts = () => ({ title: probe.title, from: f.from || '', to: f.to || '', i1: (f.i1 || '').trim(), i2: (f.i2 || '').trim(), term: f.term || '', ref: (f.ref || '').trim(), hidden: !!f.hidden, order: f.order || 'asc', pm: f.pm || '', by: f.by == null ? '' : f.by });
   const colsDrawn = cfg => { const sv = prefGet(pk()), sel = (sv.cols && sv.cols.length) ? sv.cols : cfg.cols.filter(c => !c.off).map(c => c.k); return { sv, sel }; };
   const drawCols = () => { const { sel } = colsDrawn(probe); $('#rcols').innerHTML = probe.cols.map(c => `<label style="display:flex;gap:5px;align-items:center;flex:0 0 auto"><input type="checkbox" data-c="${c.k}" ${sel.includes(c.k) ? 'checked' : ''}> ${esc(c.l)}</label>`).join(''); $$('#rcols input').forEach(i => i.onchange = () => { const cs = $$('#rcols input').filter(x => x.checked).map(x => x.dataset.c); if (!cs.length) { i.checked = true; return toast('اختر عموداً واحداً على الأقل', 1); } prefSet(pk(), { ...prefGet(pk()), cols: cs }); draw(); }); };
   const draw = () => {
@@ -784,6 +797,119 @@ async function pageReports(key) {
   $('#rprint').onclick = () => { if (!cur) return toast(rp.needs ? 'اختر الاسم أولاً' : 'لا يوجد تقرير', 1); printDialog(cur.cfg, { ...cur.o }); };
   $('#rcsv').onclick = () => { if (!cur) return toast('اختر الاسم أولاً', 1); const rows = cur.out.rows.map(r => cur.cols.map(c => r[c.k])); if (cur.out.total && !cur.cfg.noTotalCsv) rows.push(cur.cols.map((c, i) => i === 0 && !(c.k in cur.out.total) ? 'الإجمالي' : (c.k in cur.out.total ? cur.out.total[c.k] : ''))); dl((cur.cfg.title || 'تقرير').replace(/[\\/:*?"<>|]+/g, '-') + '.csv', toCsv(cur.cols.map(c => c.l), rows)); };
   drawCols(); draw();
+}
+
+
+/* ============================ جداول السداد (الحد الائتماني على دفعات) ============================ */
+const instBalances = () => { const m = new Map(); customerBalances('الكل', true, null).rows.forEach(r => m.set(r.id, r)); return m; };
+/** لنا طرفه بعد كل دفعة = الحد − مجموع الدفعات حتى تلك الدفعة. أحمر: الصافي الحالي أكبر من المفروض حسب تاريخ اليوم */
+function instCompute(c, rows, netR, td) {
+  const lim = num(c.credit_limit), list = rows.slice().sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)) || (a.seq || 0) - (b.seq || 0));
+  let cum = 0; const out = list.map((r, i) => { cum += num(r.amount); return { ...r, n: i + 1, remaining: r2(lim - cum), past: String(r.due_date) <= td }; });
+  const past = out.filter(r => r.past), cur = past.length ? past[past.length - 1] : null, expected = cur ? cur.remaining : lim, behind = Math.max(0, r2(netR - expected));
+  out.forEach(r => { r.late = r.past && netR > r.remaining + 0.009; });
+  return { rows: out, lim, total: cum, expected, behind, late: !!cur && behind > 0.009, cur, next: out.find(r => !r.past) || null, over: lim > 0 && netR > lim + 0.009 };
+}
+let remData = null;
+async function remindList() {
+  await load('customers', 'sales', 'customer_returns', 'adjustments', 'installments', 'app_settings');
+  const td = today(), tm = addDays(td, 1), bal = instBalances(), byC = new Map(), items = [], behind = [];
+  S.data.installments.forEach(r => { if (!byC.has(r.customer_id)) byC.set(r.customer_id, []); byC.get(r.customer_id).push(r); });
+  byC.forEach((rows, cid) => { const c = S.data.customers.find(x => x.id === cid); if (!c) return; const net = (bal.get(cid) || {}).netR || 0, ci = instCompute(c, rows, net, td);
+    ci.rows.forEach(r => { if (r.due_date === td || r.due_date === tm) items.push({ cid, name: c.name, when: r.due_date === td ? 'اليوم' : 'غداً', date: r.due_date, n: r.n, amount: num(r.amount), remaining: r.remaining, net, need: Math.max(0, r2(net - r.remaining)), key: `${cid}|${r.due_date}|${r.n}` }); });
+    if (ci.late) behind.push({ cid, name: c.name, behind: ci.behind, expected: ci.expected, net, since: ci.cur.due_date }); });
+  items.sort((a, b) => (a.when === b.when ? 0 : a.when === 'اليوم' ? -1 : 1)); behind.sort((a, b) => b.behind - a.behind);
+  return { items, behind, td };
+}
+function remModal(d) {
+  const m = document.createElement('div'); m.className = 'modal'; m.style.zIndex = 300;
+  const line = x => `<a href="#/installments/${x.cid}" style="display:block;padding:10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:6px;text-decoration:none;color:var(--tx)"><b>${esc(x.name)}</b> — دفعة رقم ${x.n} بقيمة <b class="num">${fmt(x.amount)}</b><br><small class="mut">لنا طرفه بعدها ${fmt(x.remaining)} — الصافي الحالي ${fmt(x.net)} — ${x.need > 0 ? `<b class="neg">المطلوب سداده ${fmt(x.need)}</b>` : '✔ العميل منتظم'}</small></a>`;
+  const sec = (t, arr, f) => arr.length ? `<h4 style="margin:12px 0 6px">${t}</h4>${arr.map(f).join('')}` : '';
+  const canN = 'Notification' in window && Notification.permission === 'default';
+  m.innerHTML = `<div class="m" style="max-width:560px"><h3 style="margin-top:0">🔔 تذكيرات الدفعات</h3><div style="max-height:62vh;overflow:auto">${sec('⏰ دفعات مستحقة اليوم', d.items.filter(x => x.when === 'اليوم'), line)}${sec('📅 دفعات مستحقة غداً', d.items.filter(x => x.when === 'غداً'), line)}${sec('🔴 متأخرون عن الجدول', d.behind, x => `<a href="#/installments/${x.cid}" style="display:block;padding:10px;border:1px solid #dc2626;border-radius:10px;margin-bottom:6px;text-decoration:none;background:rgba(220,38,38,.1);color:var(--tx)"><b>${esc(x.name)}</b> — الصافي ${fmt(x.net)} أكبر من المفروض ${fmt(x.expected)} بمقدار <b class="neg">${fmt(x.behind)}</b></a>`) || ''}${!d.items.length && !d.behind.length ? '<div class="mut" style="text-align:center;padding:20px">لا توجد تذكيرات الآن ✔</div>' : ''}</div><div class="row" style="justify-content:center;margin-top:12px">${canN ? '<button class="btn gh fit" data-n>🔔 تفعيل إشعارات المتصفح</button>' : ''}<button class="btn fit" data-c>إغلاق</button></div></div>`;
+  document.body.appendChild(m); m.querySelector('[data-c]').onclick = () => m.remove(); m.addEventListener('click', e => { if (e.target === m || e.target.closest('a')) m.remove(); });
+  const nb = m.querySelector('[data-n]'); if (nb) nb.onclick = async () => { try { await Notification.requestPermission(); } catch (e) {} nb.remove(); toast(Notification.permission === 'granted' ? 'تم تفعيل الإشعارات ✔ (تعمل أثناء فتح الموقع في المتصفح)' : 'لم يتم السماح بالإشعارات'); };
+}
+async function refreshBell(auto) {
+  if (!canSeeAll() || !$('#bell')) return;
+  try {
+    remData = await remindList(); const n = remData.items.length + remData.behind.length, b = $('#bellc'); if (b) b.innerHTML = n ? `<span class="bdg">${n}</span>` : '';
+    if (!auto) return; const td = remData.td, key = 'rem_day_' + (me && me.id);
+    if (n && lsGet(key, '') !== td) { lsSet(key, td); remModal(remData); }
+    if ('Notification' in window && Notification.permission === 'granted') {
+      let sent = []; try { sent = JSON.parse(lsGet('rem_sent', '[]')).filter(k => k.startsWith(td)); } catch (e) {}
+      remData.items.forEach(x => { const k = td + '|' + x.key + '|' + x.when; if (sent.includes(k)) return; sent.push(k); try { new Notification(`دفعة ${x.when}: ${x.name}`, { body: `دفعة رقم ${x.n} بقيمة ${fmt(x.amount)}${x.need > 0 ? ' — المطلوب سداده ' + fmt(x.need) : ' — العميل منتظم'}` }); } catch (e) {} });
+      lsSet('rem_sent', JSON.stringify(sent));
+    }
+  } catch (e) { console.warn('bell', e); }
+}
+const instOverviewRows = () => { const td = today(), bal = instBalances(), out = [];
+  S.data.customers.forEach(c => { const rows = S.data.installments.filter(r => r.customer_id === c.id); if (!rows.length) return; const net = (bal.get(c.id) || {}).netR || 0, ci = instCompute(c, rows, net, td);
+    out.push({ c, ci, net, state: ci.over ? '⛔ تجاوز الحد' : ci.late ? '🔴 متأخر' : (ci.next && ci.next.due_date <= addDays(td, 1)) ? '⏰ دفعة قريبة' : '🟢 منتظم' }); });
+  const ord = { '⛔ تجاوز الحد': 0, '🔴 متأخر': 1, '⏰ دفعة قريبة': 2, '🟢 منتظم': 3 }; return out.sort((a, b) => ord[a.state] - ord[b.state] || b.ci.behind - a.ci.behind); };
+const instOverviewCfg = () => ({ key: 'instov', title: 'جداول السداد — ملخص العملاء', filters: {},
+  cols: [{ k: 'name', l: 'العميل', t: 't' }, { k: 'lim', l: 'الحد', t: 'm', sum: true }, { k: 'cnt', l: 'عدد الدفعات', t: 't' }, { k: 'net', l: 'الصافي الآن', t: 'm', sum: true }, { k: 'exp', l: 'المفروض لا يزيد عن', t: 'm' }, { k: 'behind', l: 'المتأخر', t: 'm', sum: true }, { k: 'next', l: 'الدفعة القادمة', t: 't' }, { k: 'state', l: 'الحالة', t: 't' }],
+  build() { return { rows: instOverviewRows().map(x => ({ name: x.c.name, lim: x.ci.lim, cnt: x.ci.rows.length, net: x.net, exp: x.ci.expected, behind: x.ci.behind, next: x.ci.next ? `${x.ci.next.due_date} — ${fmt(x.ci.next.amount)}` : '—', state: x.state.replace(/^\S+\s/, '') })) }; } });
+const instCustCfg = c => ({ key: 'instc', title: 'جدول سداد: ' + c.name, filters: {},
+  cols: [{ k: 'n', l: 'رقم الدفعة', t: 't' }, { k: 'rem', l: 'لنا طرفه', t: 'm' }, { k: 'date', l: 'تاريخ الدفعة', t: 't' }, { k: 'amount', l: 'قيمة الدفعة', t: 'm', sum: true }, { k: 'state', l: 'الحالة', t: 't' }],
+  build() { const bal = instBalances(), net = (bal.get(c.id) || {}).netR || 0, ci = instCompute(c, S.data.installments.filter(r => r.customer_id === c.id), net, today()); return { rows: ci.rows.map(r => ({ n: r.n, rem: r.remaining, date: r.due_date, amount: r.amount, state: r.late ? 'متأخر' : r.past ? 'حلّ موعدها' : 'قادمة' })) }; } });
+
+async function pageInstallments(cidArg) {
+  await load('customers', 'sales', 'customer_returns', 'adjustments', 'installments', 'app_settings');
+  const td = today(), bal = instBalances(), custs = S.data.customers.slice().sort((a, b) => a.name.localeCompare(b.name, 'ar')), admin = isAdmin();
+  const cid = cidArg ? +cidArg : 0, c = custs.find(x => x.id === cid);
+  const pickBox = `<div class="card noprint"><div class="row" style="align-items:flex-end"><div><label class="l">اختر عميلاً لإنشاء أو تعديل جدول السداد</label><input id="ipick" list="ipl" placeholder="اكتب حرفاً لتظهر الأسماء"><datalist id="ipl">${custs.map(x => `<option value="${esc(x.name)}">`).join('')}</datalist></div><div class="fit"><button class="btn" id="igo">فتح</button></div>${c ? '<div class="fit"><a class="btn gh" href="#/installments">← كل الجداول</a></div>' : ''}</div></div>`;
+  const wirePick = () => { const open = () => { const x = custs.find(y => norm(y.name) === norm($('#ipick').value)); if (!x) return toast('اختر اسماً من القائمة', 1); location.hash = '#/installments/' + x.id; }; $('#igo').onclick = open; $('#ipick').addEventListener('change', open); };
+  if (!c) {
+    const rows = instOverviewRows();
+    $('#page').innerHTML = pickBox + `<div class="card"><div class="row noprint" style="align-items:center"><h3 style="margin:0">📆 متابعة جداول السداد</h3><div class="fit"><button class="btn" id="ipr">🖨️ طباعة</button></div></div><div class="note">🔴 أحمر = الصافي الحالي أكبر من «لنا طرفه» المفروض حسب جدول اليوم. اضغط اسم العميل لفتح جدوله.</div>
+      <div class="tw"><table><thead><tr><th>العميل</th><th class="n">الحد</th><th class="n">الصافي الآن</th><th class="n">المفروض لا يزيد عن</th><th class="n">المتأخر</th><th>الدفعة القادمة</th><th>الحالة</th></tr></thead><tbody>${rows.map(x => `<tr class="${x.ci.late || x.ci.over ? 'late-r' : ''}"><td><a href="#/installments/${x.c.id}"><b>${esc(x.c.name)}</b></a></td><td class="n">${fmt(x.ci.lim)}</td><td class="n">${fmt(x.net)}</td><td class="n">${fmt(x.ci.expected)}</td><td class="n ${x.ci.behind > 0 ? 'neg' : ''}">${fmt(x.ci.behind)}</td><td>${x.ci.next ? `${x.ci.next.due_date} — ${fmt(x.ci.next.amount)}` : '—'}</td><td>${x.state}</td></tr>`).join('') || '<tr><td colspan="7" class="mut" style="text-align:center;padding:24px">لا توجد جداول بعد — اختر عميلاً من الأعلى لإنشاء أول جدول</td></tr>'}</tbody></table></div></div>`;
+    wirePick(); $('#ipr').onclick = () => printDialog(instOverviewCfg(), {}); return;
+  }
+  const net = (bal.get(c.id) || {}).netR || 0, saved = S.data.installments.filter(r => r.customer_id === c.id).sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)) || a.seq - b.seq);
+  let draft = saved.map(r => ({ due_date: r.due_date, amount: num(r.amount) }));
+  $('#page').innerHTML = pickBox + `<div class="card"><h3 style="margin-top:0">📆 جدول سداد: ${esc(c.name)}</h3>
+    <div class="kpis"><div class="kpi"><small>الصافي الآن (بعد المرتجع)</small><b class="num">${fmt(net)}</b></div><div class="kpi" id="kExp"><small>المفروض لا يزيد عن اليوم</small><b class="num">—</b></div><div class="kpi" id="kBeh"><small>المتأخر عن الجدول</small><b class="num">—</b></div><div class="kpi" id="kTot"><small>إجمالي الجدول</small><b class="num">—</b></div></div></div>
+   ${admin ? `<div class="card noprint"><h3 style="margin-top:0">⚙️ إنشاء الجدول تلقائياً</h3><div class="grid g4"><div><label class="l">الحد الائتماني للعميل</label><input class="num money" id="ilim" inputmode="decimal" value="${c.credit_limit == null ? '' : c.credit_limit}" placeholder="مثال: 13000000"></div><div><label class="l">عدد الدفعات</label><input class="num" id="icnt" inputmode="numeric" value="${draft.length || 13}"></div><div><label class="l">تاريخ أول دفعة</label><input type="date" id="istart" value="${td}"></div><div><label class="l">المدة بين الدفعات</label><select id="iint"><option value="7">أسبوعياً (7 أيام)</option><option value="14">كل أسبوعين</option><option value="m">شهرياً</option><option value="x">عدد أيام مخصص</option></select></div><div id="ixw" style="display:none"><label class="l">عدد الأيام</label><input class="num" id="ix" inputmode="numeric" value="10"></div></div><div class="sp"></div><button class="btn" id="igen">⚙️ توزيع الحد على الدفعات بالتساوي</button> <span class="mut">يمكنك بعد التوزيع تعديل أي تاريخ أو مبلغ يدوياً كما في Excel</span></div>` : ''}
+   <div class="card"><div class="tw"><table id="itb"><thead><tr><th>#</th><th>تاريخ الدفعة</th><th class="n">قيمة الدفعة</th><th class="n">لنا طرفه</th><th>الحالة</th>${admin ? '<th></th>' : ''}</tr></thead><tbody></tbody></table></div><div class="sp"></div>
+    ${admin ? '<div class="row noprint"><div class="fit"><button class="btn gh" id="iadd">➕ إضافة دفعة</button></div><div class="fit"><button class="btn" id="isave">💾 حفظ الجدول</button></div><div class="fit"><button class="btn gh" id="idel">🗑️ حذف الجدول</button></div>' : '<div class="row noprint">'}<div class="fit"><button class="btn gh" id="iprn">🖨️ طباعة الجدول المحفوظ</button></div></div></div>`;
+  wirePick();
+  const limV = () => admin ? num($('#ilim').value) : num(c.credit_limit);
+  const body = () => { $('#itb tbody').innerHTML = draft.map((r, i) => `<tr data-i="${i}"><td class="num mut">${i + 1}</td><td><input type="date" data-k="due_date" value="${esc(r.due_date)}" ${admin ? '' : 'disabled'}></td><td><input class="num money" data-k="amount" inputmode="decimal" value="${r.amount === '' ? '' : r.amount}" ${admin ? '' : 'disabled'}></td><td class="n num" data-rem></td><td data-st></td>${admin ? '<td><button class="btn gh sm" data-x>✖</button></td>' : ''}</tr>`).join('') || `<tr><td colspan="6" class="mut" style="text-align:center;padding:20px">لا توجد دفعات — اضبط الحد وعدد الدفعات ثم اضغط «توزيع»، أو أضف دفعة يدوياً</td></tr>`;
+    $$('#itb tbody tr[data-i]').forEach(tr => { const i = +tr.dataset.i; $$('input', tr).forEach(inp => inp.addEventListener('input', () => { draft[i][inp.dataset.k] = inp.dataset.k === 'amount' ? (inp.value === '' ? '' : num(inp.value)) : inp.value; recalc(); })); const x = $('[data-x]', tr); if (x) x.onclick = () => { draft.splice(i, 1); body(); }; });
+    recalc(); };
+  function recalc() {
+    const ci = instCompute({ credit_limit: limV() }, draft.map((r, i) => ({ due_date: r.due_date || '9999-12-31', amount: r.amount === '' ? 0 : r.amount, seq: i })), net, td);
+    // الصفوف المحسوبة مرتبة بالتاريخ؛ نعرضها بترتيب الإدخال بمطابقة المؤشر
+    const byI = new Map(); ci.rows.forEach(r => byI.set(r.seq, r));
+    $$('#itb tbody tr[data-i]').forEach(tr => { const r = byI.get(+tr.dataset.i); if (!r) return; $('[data-rem]', tr).textContent = fmt(r.remaining); $('[data-st]', tr).textContent = r.late ? '🔴 متأخر' : r.past ? '✔ حلّ موعدها' : 'قادمة'; tr.className = r.late ? 'ps-late' : r.past ? 'ps-past' : 'ps-next'; });
+    $('#kExp b').textContent = fmt(ci.expected); $('#kBeh b').textContent = fmt(ci.behind); $('#kBeh').classList.toggle('red', ci.late); $('#kExp').classList.toggle('red', ci.late);
+    const diff = r2(limV() - ci.total); $('#kTot b').textContent = fmt(ci.total); $('#kTot small').textContent = Math.abs(diff) > 0.009 && draft.length ? `إجمالي الجدول — ${diff > 0 ? 'ينقص عن الحد بـ' : 'يزيد على الحد بـ'} ${fmt(Math.abs(diff))}` : 'إجمالي الجدول' + (draft.length ? ' (مطابق للحد ✔)' : '');
+  }
+  body();
+  if (!admin) return $('#iprn').onclick = () => printDialog(instCustCfg(c), {});
+  $('#ilim').addEventListener('input', recalc); $('#iint').onchange = () => { $('#ixw').style.display = $('#iint').value === 'x' ? '' : 'none'; };
+  $('#igen').onclick = () => {
+    const lim = limV(), n = Math.floor(num($('#icnt').value)), st = $('#istart').value, iv = $('#iint').value; if (!(lim > 0)) return toast('اكتب الحد الائتماني أولاً', 1); if (!(n >= 1 && n <= 120)) return toast('عدد الدفعات من 1 إلى 120', 1); if (!st) return toast('اختر تاريخ أول دفعة', 1);
+    const days = iv === 'x' ? Math.max(1, Math.floor(num($('#ix').value))) : +iv; if (draft.length && !confirm('سيُستبدل الجدول الحالي (غير المحفوظ) بالتوزيع الجديد. متابعة؟')) return;
+    const per = Math.floor(lim * 100 / n) / 100; draft = Array.from({ length: n }, (_, i) => ({ due_date: iv === 'm' ? addMonths(st, i) : addDays(st, days * i), amount: i === n - 1 ? r2(lim - per * (n - 1)) : per })); body();
+  };
+  $('#iadd').onclick = () => { const last = draft.length ? draft[draft.length - 1].due_date : td; draft.push({ due_date: draft.length ? addDays(last, 7) : td, amount: '' }); body(); };
+  $('#idel').onclick = async () => { if (!saved.length) return toast('لا يوجد جدول محفوظ'); if (!confirm('حذف جدول السداد لهذا العميل نهائياً؟')) return; const { error } = await sb.from('installments').delete().eq('customer_id', c.id); if (error) return toast(error.message, 1); invalidate('installments'); toast('تم حذف الجدول'); await load('installments'); route(); };
+  $('#isave').onclick = async () => {
+    const btn = $('#isave'); btn.disabled = true;
+    try {
+      if (!draft.length) throw new Error('لا توجد دفعات للحفظ'); if (draft.some(r => !r.due_date || r.amount === '' || !(num(r.amount) >= 0))) throw new Error('كل دفعة تحتاج تاريخاً وقيمة');
+      const lim = limV(); if (!(lim > 0)) throw new Error('اكتب الحد الائتماني'); const sorted = draft.map(r => ({ due_date: r.due_date, amount: r2(num(r.amount)) })).sort((a, b) => a.due_date.localeCompare(b.due_date));
+      if (num(c.credit_limit) !== lim) { const { error } = await sb.from('customers').update({ credit_limit: lim }).eq('id', c.id); if (error) throw error; }
+      const old = saved.map(r => ({ customer_id: r.customer_id, seq: r.seq, due_date: r.due_date, amount: r.amount, note: r.note || '' }));
+      let { error } = await sb.from('installments').delete().eq('customer_id', c.id); if (error) throw error;
+      ({ error } = await sb.from('installments').insert(sorted.map((r, i) => ({ customer_id: c.id, seq: i + 1, due_date: r.due_date, amount: r.amount }))));
+      if (error) { if (old.length) await sb.from('installments').insert(old); throw error; }
+      invalidate('installments', 'customers'); await load('installments', 'customers'); toast('تم حفظ جدول السداد ✔'); route(); refreshBell();
+    } catch (e) { toast(e.message || String(e), 1); } finally { btn.disabled = false; }
+  };
+  $('#iprn').onclick = () => printDialog(instCustCfg(c), {});
 }
 
 /* ============================ الصفحات ============================ */
@@ -1258,6 +1384,7 @@ const ROUTES = [
   ['treasury', '🏦', 'الخزنة', 'admin', () => pageTreasury()],
   ['bal-c', '👥', 'أرصدة العملاء', 'admin', () => pageBalances('c')],
   ['bal-p', '🏢', 'أرصدة الناشرين', 'admin', () => pageBalances('p')],
+  ['installments', '📆', 'جداول السداد', 'admin', (id) => pageInstallments(id)],
   ['adjustments', '➕', 'تسويات الحساب (بدون خزنة)', 'admin', () => pageAdjustments()],
   ['stmt-c', '📄', 'كشف حساب عميل', 'admin', (id) => pageStatement('c', id)],
   ['stmt-p', '📃', 'كشف حساب ناشر', 'admin', (id) => pageStatement('p', id)],
@@ -1270,13 +1397,14 @@ const ROUTES = [
 let rtTimer = null, curRoute = null;
 const routeOk = r => r[3] === 'all' || (r[3] === 'admin' && canSeeAll()) || (r[3] === 'owner' && isAdmin());
 function renderShell() {
-  $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><div class="brand">${brand().logo ? `<img src="${brand().logo}" alt="">` : '<b>📚</b>'}<span>${esc(brand().name)}</span></div><nav>${ROUTES.filter(routeOk).map(r => `<a href="#/${r[0]}" data-r="${r[0]}">${r[1]} ${r[2]}</a>`).join('')}</nav><div class="me"><div>${esc(me.full_name || me.email)}</div><div style="opacity:.6;font-size:12px">${roleLabel(me.role)}</div>${DEMO ? `<div style="margin-top:8px"><span class="tag wa">وضع تجريبي</span> <button class="btn gh sm" id="swRole" style="color:#fff;border-color:rgba(255,255,255,.3)">🔁 ${me.role === 'admin' ? 'جرّب كموظف' : me.role === 'staff' ? 'جرّب قراءة فقط' : 'جرّب كمدير'}</button></div>` : ''}<div style="display:flex;gap:6px;margin-top:8px"><button class="btn gh sm" id="theme" style="color:#fff;border-color:rgba(255,255,255,.3)">🎨 ${TN[document.documentElement.dataset.theme] || ''}</button><button class="btn gh sm" id="out" style="color:#fff;border-color:rgba(255,255,255,.3)">خروج</button></div></div></aside><div class="scrim" id="scrim"></div><div class="main"><div class="top"><button class="btn gh sm burger" id="burger">☰</button><h2 id="ttl"></h2>${DEMO ? '<span class="tag wa">وضع تجريبي — البيانات في هذا المتصفح فقط</span>' : ''}</div><div class="page" id="page"></div></div></div>`;
+  $('#app').innerHTML = `<div class="shell"><aside class="side" id="side"><div class="brand">${brand().logo ? `<img src="${brand().logo}" alt="">` : '<b>📚</b>'}<span>${esc(brand().name)}</span></div><nav>${ROUTES.filter(routeOk).map(r => `<a href="#/${r[0]}" data-r="${r[0]}">${r[1]} ${r[2]}</a>`).join('')}</nav><div class="me"><div>${esc(me.full_name || me.email)}</div><div style="opacity:.6;font-size:12px">${roleLabel(me.role)}</div>${DEMO ? `<div style="margin-top:8px"><span class="tag wa">وضع تجريبي</span> <button class="btn gh sm" id="swRole" style="color:#fff;border-color:rgba(255,255,255,.3)">🔁 ${me.role === 'admin' ? 'جرّب كموظف' : me.role === 'staff' ? 'جرّب قراءة فقط' : 'جرّب كمدير'}</button></div>` : ''}<div style="display:flex;gap:6px;margin-top:8px"><button class="btn gh sm" id="theme" style="color:#fff;border-color:rgba(255,255,255,.3)">🎨 ${TN[document.documentElement.dataset.theme] || ''}</button><button class="btn gh sm" id="out" style="color:#fff;border-color:rgba(255,255,255,.3)">خروج</button></div></div></aside><div class="scrim" id="scrim"></div><div class="main"><div class="top"><button class="btn gh sm burger" id="burger">☰</button><h2 id="ttl"></h2>${canSeeAll() ? '<button class="btn gh sm" id="bell" title="تذكيرات الدفعات" style="margin-inline-start:auto">🔔<span id="bellc"></span></button>' : ''}${DEMO ? '<span class="tag wa">وضع تجريبي — البيانات في هذا المتصفح فقط</span>' : ''}</div><div class="page" id="page"></div></div></div>`;
   $('#theme').onclick = () => { const nx = THEMES[(THEMES.indexOf(document.documentElement.dataset.theme) + 1) % THEMES.length]; setTheme(nx); $('#theme').textContent = '🎨 ' + TN[nx]; };
   document.body.classList.toggle('ro', !!isViewer());
   if ($('#swRole')) $('#swRole').onclick = () => { lsSet('demo_role', me.role === 'admin' ? 'staff' : me.role === 'staff' ? 'viewer' : 'admin'); location.hash = ''; location.reload(); };
   $('#out').onclick = async () => { await sb.auth.signOut(); location.hash = ''; location.reload(); };
   const tog = () => { $('#side').classList.toggle('open'); $('#scrim').classList.toggle('open'); };
   $('#burger').onclick = tog; $('#scrim').onclick = tog;
+  if ($('#bell')) $('#bell').onclick = async () => { await refreshBell(false); remModal(remData || { items: [], behind: [] }); };
 }
 async function route() {
   if (!me) return;
@@ -1415,7 +1543,7 @@ async function boot() {
   if (error || !prof) { $('#app').innerHTML = `<div class="center"><div class="box"><h1>لا يوجد ملف مستخدم</h1><p>تأكد من تشغيل ملف schema.sql ثم أعد الدخول.</p><button class="btn" id="o2">خروج</button></div></div>`; $('#o2').onclick = async () => { await sb.auth.signOut(); location.reload(); }; return; }
   if (!prof.active) { await sb.auth.signOut(); loginScreen(); return toast('هذا الحساب موقوف، تواصل مع المدير', 1); }
   me = prof; prefPull(session.user); try { await load('app_settings'); lsSet('logo_cache', settings().logo || ''); lsSet('name_cache', settings().store_name || ''); } catch (e) {} applyBrand(); renderShell(); startRealtime();
-  window.addEventListener('hashchange', route); route();
+  window.addEventListener('hashchange', route); route(); setTimeout(() => refreshBell(true), 1500); setInterval(() => refreshBell(true), 15 * 60 * 1000);
 }
 applyBrand();
 document.documentElement.dataset.theme = (['soft', 'sepia', 'dark', 'light'].includes(lsGet('theme', 'soft')) ? lsGet('theme', 'soft') : 'soft');
